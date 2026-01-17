@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kabintify | แจ้งเตือนเวลาเรียนผ่านไลน์</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Kanit', sans-serif; scroll-behavior: smooth; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <nav class="fixed w-full bg-white/80 backdrop-blur-md z-50 shadow-sm">
+        <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-xl font-bold text-blue-600">Kabintify</div>
+            <div class="space-x-6">
+                <a href="#home" class="hover:text-blue-600 transition font-medium">หน้าแรก</a>
+                <a href="#about" class="hover:text-blue-600 transition font-medium">เกี่ยวกับระบบ</a>
+            </div>
+        </div>
+    </nav>
+
+    <section id="home" class="pt-40 pb-24 px-6">
+        <div class="max-w-5xl mx-auto flex flex-col md:flex-row items-center">
+            <div class="md:w-1/2 mb-10 md:mb-0">
+                <h1 class="text-4xl md:text-6xl font-bold mb-4 leading-tight">ระบบแจ้งเตือนเวลาเรียนผ่านไลน์ <br><span class="text-blue-600">Kabintify</span></h1>
+                <p class="text-xl text-gray-600 mb-8">ของวิทยาลัยการอาชีพกบินทร์บุรี</p>
+                
+                <a href="https://line.me/ti/p/@072wxnak" target="_blank" class="inline-flex items-center bg-[#00b900] text-white px-8 py-3 rounded-full font-semibold hover:bg-[#00a300] transition shadow-lg transform hover:-translate-y-1">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/4/41/LINE_logo.svg" class="w-6 h-6 mr-2 invert" alt="Line Logo">
+                    เพิ่มเพื่อนใน Line
+                </a>
+            </div>
+            <div class="md:w-1/2 flex justify-center">
+                <div class="w-64 h-64 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-xl">
+                    <img src="kabin.jpg" alt="Profile" class="w-full h-full object-cover">
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="about" class="py-24 bg-white px-6">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="text-3xl font-bold mb-10 text-center">เกี่ยวกับระบบ</h2>
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="space-y-4">
+                    <p class="text-gray-600 leading-relaxed text-lg">
+                        " เป็นระบการแจ้งเตือนตารางเรียนผ่านไลน์ ซึ่งทำให้ผู้เรียน สามารถเข้าเรียนตรงต่อเวลาได้มากขึ้น "
+                    </p>
+                    <p class="text-gray-600 leading-relaxed text-lg">
+                        เป้าหมายของพวกเราคือการทำให้ผู้เรียนไม่จำเป็นต้องดูตารางเรียนตลอด สามารถเข้าเรียนตรงต่อเวลาได้ เพื่อสร้างความรับผิดชอบที่ดีต่อผู้เรียน
+                    </p>
+                </div>
+                <div class="bg-gray-50 p-8 rounded-2xl space-y-5 border border-gray-100 shadow-sm">
+                    <div class="flex items-center">
+                        <span class="font-bold w-28 text-blue-600">ที่อยู่:</span>
+                        <span class="text-gray-600">เลขที่ 202 หมู่ 3 ตำบลลาดตะเคียน อำเภอกบินทร์บุรี จังหวัดปราจีนบุรี 25110</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="font-bold w-28 text-blue-600">ผู้จัดทำ:</span>
+                        <span class="text-gray-600">นาย บรรณวิชญ์ นาดี<br>นาย ธัญชนน อินบุญ<br>นาย ธัันวา คำงอก</span>
+                    </div>
+                    <div class="flex items-center">
+                        <span class="font-bold w-28 text-blue-600">ที่ปรึกษาโครงงาน:</span>
+                        <span class="text-gray-600">นายวิทยา นาคประเสริฐ<br>นางสาววิมณฑา การทนารักษ์</span>
+                    </div>
+                    
+                    <div class="flex items-center pt-4 border-t border-gray-200">
+                        <span class="font-bold w-28 text-blue-600">Line ID:</span>
+                        <a href="https://line.me/ti/p/@072wxnak" target="_blank" class="text-[#00b900] font-bold hover:underline">
+                            @072wxnak
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</body>
+</html>
