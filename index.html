@@ -14,19 +14,36 @@
     
     <style>
         body { font-family: 'Kanit', sans-serif; scroll-behavior: smooth; }
+        /* สไตล์เพิ่มเติมสำหรับเมนูมือถือ */
+        #mobile-menu.active { display: block; }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800">
 
-    <nav class="fixed w-full bg-white/90 backdrop-blur-md z-50 shadow-sm">
+    <nav class="fixed w-full bg-white/90 backdrop-blur-md z-50 shadow-sm border-b border-gray-100">
         <div class="max-w-5xl mx-auto px-6 py-4 flex justify-between items-center">
             <div class="text-xl font-bold text-blue-600">Kabintify</div>
-            <div class="space-x-4 md:space-x-6">
-                <a href="#home" class="hover:text-blue-600 transition font-medium text-sm md:text-base">หน้าแรก</a>
-                <a href="#class" class="hover:text-blue-600 transition font-medium text-sm md:text-base">ตารางเรียน</a>
-                <a href="#about" class="hover:text-blue-600 transition font-medium text-sm md:text-base">เกี่ยวกับระบบ</a>
-                <a href="classpy.html" target="_blank" class="hover:text-blue-600 transition font-medium text-sm md:text-base">แก้ไขโค้ดตารางเรียน</a>
-                <a href="https://github.com/windysurface/kabintify" target="_blank" class="hover:text-gray-900 transition font-medium text-sm md:text-base">ดู Source Code(Github)</a>
+
+            <div class="hidden lg:flex items-center space-x-6">
+                <a href="#home" class="hover:text-blue-600 transition font-medium">หน้าแรก</a>
+                <a href="#class" class="hover:text-blue-600 transition font-medium">ตารางเรียน</a>
+                <a href="#about" class="hover:text-blue-600 transition font-medium">เกี่ยวกับระบบ</a>
+                <a href="classpy.html" target="_blank" class="hover:text-blue-600 transition font-medium">แก้ไขโค้ดตารางเรียน</a>
+                <a href="https://github.com/windysurface/kabintify" target="_blank" class="hover:text-gray-900 transition font-medium">ดู Source Code(Github)</a>
+            </div>
+
+            <button id="menu-toggle" class="lg:hidden text-gray-600 focus:outline-none">
+                <i class="fas fa-bars text-2xl"></i>
+            </button>
+        </div>
+
+        <div id="mobile-menu" class="hidden lg:hidden bg-white border-t border-gray-100 shadow-lg transition-all duration-300">
+            <div class="flex flex-col p-6 space-y-4">
+                <a href="#home" class="mobile-link hover:text-blue-600 font-medium border-b border-gray-50 pb-2">หน้าแรก</a>
+                <a href="#class" class="mobile-link hover:text-blue-600 font-medium border-b border-gray-50 pb-2">ตารางเรียน</a>
+                <a href="#about" class="mobile-link hover:text-blue-600 font-medium border-b border-gray-50 pb-2">เกี่ยวกับระบบ</a>
+                <a href="classpy.html" target="_blank" class="hover:text-blue-600 font-medium border-b border-gray-50 pb-2">แก้ไขโค้ดตารางเรียน</a>
+                <a href="https://github.com/windysurface/kabintify" target="_blank" class="hover:text-gray-900 font-medium">ดู Source Code(Github)</a>
             </div>
         </div>
     </nav>
@@ -122,6 +139,24 @@
     <footer class="py-10 bg-gray-50 text-center text-gray-400 text-sm border-t border-gray-100">
         <p>&copy; 2026 Kabintify - วิทยาลัยการอาชีพกบินทร์บุรี</p>
     </footer>
+
+    <script>
+        const btn = document.getElementById('menu-toggle');
+        const menu = document.getElementById('mobile-menu');
+        const links = document.querySelectorAll('.mobile-link');
+
+        // คลิกปุ่มเปิด-ปิดเมนู
+        btn.addEventListener('click', () => {
+            menu.classList.toggle('hidden');
+        });
+
+        // เมื่อคลิกลิงก์เมนู ให้ซ่อนเมนูอัตโนมัติ (สำหรับหน้า One Page)
+        links.forEach(link => {
+            link.addEventListener('click', () => {
+                menu.classList.add('hidden');
+            });
+        });
+    </script>
 
 </body>
 </html>
