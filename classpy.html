@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kabintify Code Panel - ระบบจัดการตารางเรียน</title>
+    
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3119/3119338.png">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 p-4 pb-24 font-sans text-slate-900">
+    <div class="max-w-5xl mx-auto bg-white p-6 rounded-2xl shadow-xl border border-slate-100">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b pb-6">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-indigo-100 rounded-2xl flex items-center justify-center shadow-inner">
+                    <img id="head-icon" src="https://cdn-icons-png.flaticon.com/512/3119/3119338.png" alt="Bell Icon" class="w-8 h-8 object-contain">
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold text-indigo-600 leading-tight">Kabintify Code Editor 🤖</h1>
+                    <a href="https://kabintify.site" class="text-xs font-bold text-slate-400 hover:text-indigo-500 transition-colors flex items-center gap-1 mt-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                        </svg>
+                        กลับเว็บไซต์หลัก
+                    </a>
+                </div>
+            </div>
+
+            <div class="flex gap-2 w-full md:w-auto">
+                <input type="password" id="token" class="flex-1 p-2 bg-slate-50 border rounded-lg text-sm focus:ring-2 focus:ring-indigo-400 outline-none" placeholder="วาง LINE Access Token" onchange="saveToLocal()">
+                <button onclick="resetData()" class="bg-red-100 text-red-600 px-4 py-2 rounded-lg text-sm font-bold hover:bg-red-200 transition">รีเซ็ตทั้งหมด</button>
+            </div>
+        </div>
+
+        <div id="editor-container" class="space-y-6">
+            </div>
+
+        <div class="fixed bottom-0 left-0 right-0 p-4 bg-white/80 backdrop-blur-md border-t shadow-lg z-50">
+            <div class="max-w-5xl mx-auto">
+                <button onclick="generateFullCode()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl text-lg shadow-lg transition-all active:scale-95">
+                    🚀 สร้างโค้ดสำหรับ Termux (Broadcast)
+                </button>
+            </div>
+        </div>
+
+        <div id="result-area" class="mt-8 hidden pb-10">
+            <h2 class="text-lg font-bold mb-2 text-slate-700">คัดลอกโค้ดนี้ไปวางใน Termux:</h2>
+            <div class="relative group">
+                <textarea id="output-code" class="w-full h-96 p-4 bg-slate-900 text-green-400 font-mono text-xs rounded-xl border-4 border-slate-800 focus:outline-none" readonly></textarea>
+                <button onclick="copyCode()" class="absolute top-4 right-4 bg-white/10 hover:bg-white/20 text-white px-3 py-1 rounded-md text-sm border border-white/20 backdrop-blur-sm transition-all">คัดลอก</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ข้อมูลตารางเรียนเริ่มต้น
+        const defaultData = {
+            "จันทร์": [
+                {time: "08:00-10:00", name: "20204-2008 การสร้างเว็บไซต์", teacher: "ครูวิมณฑา", room: "432"},
+                {time: "13:00-15:00", name: "20204-2106 โปรแกรมสำเร็จรูปทางสถิติ", teacher: "ครูพรพิงค์", room: "434"},
+                {time: "15:00-16:00", name: "20204-8501 โครงงาน", teacher: "ครูวิทยา", room: "443"}
+            ],
+            "อังคาร": [
+                {time: "08:00-10:00", name: "20000-1204 การเขียนภาษาอังกฤษ", teacher: "ครูภาณุพงษ์", room: "123"},
+                {time: "13:00-14:00", name: "20000-1502 ประวัติศาสตร์ชาติไทย", teacher: "ครูสุวรรณา", room: "136"}
+            ],
+            "พุธ": [
+                {time: "08:00-11:00", name: "20000-1303 วิทยาศาสตร์", teacher: "ครูนภสร", room: "137"},
+                {time: "13:00-14:00", name: "Home Room", teacher: "ครูวิทยา", room: "443"},
+                {time: "14:00-16:00", name: "กิจกรรมส่งเสริมคุณธรรม", teacher: "ครูวิทยา", room: "443"}
+            ],
+            "พฤหัสบดี": [
+                {time: "08:00-10:00", name: "20000-1208 ภาษาอังกฤษเตรียมพร้อม", teacher: "ครูอชิตา", room: "122"},
+                {time: "10:00-12:00", name: "20204-2106 โปรแกรมสำเร็จรูป", teacher: "ครูพรพิงค์", room: "434"},
+                {time: "13:00-15:00", name: "20204-2008 การสร้างเว็บไซต์", teacher: "ครูวิมณฑา", room: "432"},
+                {time: "15:00-16:00", name: "20204-8501 โครงงาน", teacher: "ครูวิทยา", room: "443"}
+            ],
+            "ศุกร์": [
+                {time: "08:00-10:00", name: "20001-1001 อาชีวะอนามัย", teacher: "ครูกษาปณ์", room: "โดม"},
+                {time: "12:00-15:00", name: "20001-1003 ธุรกิจและการเป็นผู้ประกอบการ", teacher: "ครูนิติยา", room: "441"}
+            ]
+        };
+
+        let fullData = JSON.parse(localStorage.getItem('kabintify_data')) || defaultData;
+        document.getElementById('token').value = localStorage.getItem('kabintify_token') || '';
+
+        function renderEditor() {
+            const container = document.getElementById('editor-container');
+            container.innerHTML = '';
+            
+            Object.keys(fullData).forEach(day => {
+                let dayHtml = `
+                    <div class="bg-gray-100 p-5 rounded-2xl shadow-sm border border-gray-200">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-bold text-gray-800">📅 วัน${day}</h3>
+                            <button onclick="addRow('${day}')" class="bg-green-500 text-white px-3 py-1 rounded-lg text-xs font-bold hover:bg-green-600 transition-colors">+ เพิ่มวิชา</button>
+                        </div>
+                        <div class="space-y-3">
+                `;
+                
+                fullData[day].forEach((subj, idx) => {
+                    dayHtml += `
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-2 bg-white p-3 rounded-xl shadow-sm border border-gray-200 relative group">
+                            <div><label class="text-[10px] text-gray-400 uppercase font-bold">เวลา</label><input type="text" class="w-full text-xs p-2 bg-slate-50 border rounded focus:ring-2 focus:ring-indigo-300 outline-none" value="${subj.time}" onchange="updateData('${day}', ${idx}, 'time', this.value)"></div>
+                            <div class="md:col-span-2"><label class="text-[10px] text-gray-400 uppercase font-bold">วิชา</label><input type="text" class="w-full text-xs p-2 bg-slate-50 border rounded focus:ring-2 focus:ring-indigo-300 outline-none" value="${subj.name}" onchange="updateData('${day}', ${idx}, 'name', this.value)"></div>
+                            <div><label class="text-[10px] text-gray-400 uppercase font-bold">ครู</label><input type="text" class="w-full text-xs p-2 bg-slate-50 border rounded focus:ring-2 focus:ring-indigo-300 outline-none" value="${subj.teacher}" onchange="updateData('${day}', ${idx}, 'teacher', this.value)"></div>
+                            <div class="flex gap-2">
+                                <div class="flex-1"><label class="text-[10px] text-gray-400 uppercase font-bold">ห้อง</label><input type="text" class="w-full text-xs p-2 bg-slate-50 border rounded focus:ring-2 focus:ring-indigo-300 outline-none" value="${subj.room}" onchange="updateData('${day}', ${idx}, 'room', this.value)"></div>
+                                <button onclick="removeRow('${day}', ${idx})" class="mt-4 text-slate-300 hover:text-red-500 transition-colors">✕</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                dayHtml += `</div></div>`;
+                container.innerHTML += dayHtml;
+            });
+        }
+
+        function addRow(day) { fullData[day].push({time: "00:00-00:00", name: "วิชาใหม่", teacher: "ชื่อครู", room: "000"}); saveToLocal(); renderEditor(); }
+        function removeRow(day, idx) { if(confirm('ลบวิชานี้ใช่หรือไม่?')) { fullData[day].splice(idx, 1); saveToLocal(); renderEditor(); } }
+        function updateData(day, idx, field, value) { fullData[day][idx][field] = value; saveToLocal(); }
+        function saveToLocal() { localStorage.setItem('kabintify_data', JSON.stringify(fullData)); localStorage.setItem('kabintify_token', document.getElementById('token').value); }
+        function resetData() { if(confirm('ล้างข้อมูลทั้งหมด?')) { localStorage.clear(); location.reload(); } }
+
+        function generateFullCode() {
+            const token = document.getElementById('token').value || 'YOUR_ACCESS_TOKEN';
+            const daySubjectsStr = JSON.stringify(fullData, null, 4).replace(/"/g, "'");
+            
+            let remindersBody = '';
+            Object.keys(fullData).forEach(day => {
+                remindersBody += `    '${day}': {\n`;
+                fullData[day].forEach(s => {
+                    const startTime = s.time.split('-')[0];
+                    remindersBody += `        '${startTime}': 'เริ่มเรียนวิชา ${s.name} (${s.teacher}) ห้อง ${s.room}',\n`;
+                });
+                remindersBody += `    },\n`;
+            });
+
+            const pythonTemplate = `import requests\nimport time\nfrom datetime import datetime, timedelta\n\nLINE_ACCESS_TOKEN = '${token}'\n\ndef send_line_flex(day, subjects):\n    url = \"https://api.line.me/v2/bot/message/broadcast\"\n    headers = {\"Content-Type\": \"application/json\", \"Authorization\": f\"Bearer {LINE_ACCESS_TOKEN}\"}\n    subject_rows = []\n    for s in subjects:\n        subject_rows.append({\"type\": \"box\", \"layout\": \"horizontal\", \"margin\": \"md\", \"contents\": [{\"type\": \"text\", \"text\": s['time'], \"size\": \"xs\", \"color\": \"#888888\", \"flex\": 2}, {\"type\": \"text\", \"text\": f\"{s['name']}\\n{s['teacher']}\\nห้อง {s['room']}\", \"size\": \"sm\", \"weight\": \"bold\", \"wrap\": True, \"flex\": 5}]})\n    colors = {\"จันทร์\": \"#FFB800\", \"อังคาร\": \"#FF4B91\", \"พุธ\": \"#00B900\", \"พฤหัสบดี\": \"#FF7A00\", \"ศุกร์\": \"#0099FF\"}\n    payload = {\"messages\": [{\"type\": \"flex\", \"altText\": f\"ตารางเรียนวัน{day}\", \"contents\": {\"type\": \"bubble\", \"header\": {\"type\": \"box\", \"layout\": \"vertical\", \"backgroundColor\": colors.get(day, \"#333333\"), \"contents\": [{\"type\": \"text\", \"text\": \"ตารางเรียน คธ.3/2\", \"weight\": \"bold\", \"color\": \"#FFFFFF\", \"size\": \"xl\"}, {\"type\": \"text\", \"text\": f\"ประจำวัน{day}\", \"color\": \"#FFFFFFCC\", \"size\": \"sm\"}]}, \"body\": {\"type\": \"box\", \"layout\": \"vertical\", \"contents\": [{\"type\": \"text\", \"text\": \"วิชาเรียนวันนี้\", \"weight\": \"bold\", \"size\": \"md\"}, {\"type\": \"separator\", \"margin\": \"md\"}, {\"type\": \"box\", \"layout\": \"vertical\", \"margin\": \"md\", \"contents\": subject_rows}]}}}]}\n    requests.post(url, headers=headers, json=payload)\n\ndef send_line_text(text):\n    url = \"https://api.line.me/v2/bot/message/broadcast\"\n    headers = {\"Content-Type\": \"application/json\", \"Authorization\": f\"Bearer {LINE_ACCESS_TOKEN}\"}\n    payload = {\"messages\": [{\"type\": \"text\", \"text\": \"📢 \" + text}]}\n    requests.post(url, headers=headers, json=payload)\n\ndef get_thai_day():\n    days = {\"Monday\": \"จันทร์\", \"Tuesday\": \"อังคาร\", \"Wednesday\": \"พุธ\", \"Thursday\": \"พฤหัสบดี\", \"Friday\": \"ศุกร์\"}\n    return days.get(datetime.now().strftime(\"%A\"))\n\nday_subjects = ${daySubjectsStr}\ntext_reminders = {\n${remindersBody}}\n\ndef get_next_event():\n    now = datetime.now()\n    day_thai = get_thai_day()\n    today_times = [\"07:30\"]\n    if day_thai in text_reminders: today_times.extend(text_reminders[day_thai].keys())\n    future_events = []\n    for t_str in sorted(list(set(today_times))):\n        target = now.replace(hour=int(t_str[:2]), minute=int(t_str[3:]), second=0, microsecond=0)\n        if target > now: future_events.append((target, t_str))\n    if not future_events:\n        next_day = now + timedelta(days=1)\n        return next_day.replace(hour=7, minute=30, second=0, microsecond=0), \"07:30\"\n    return future_events[0]\n\nif __name__ == \"__main__\":\n    print(\">>> บอท Kabintify เริ่มทำงาน...\")\n    while True:\n        target_dt, t_str = get_next_event()\n        wait_seconds = (target_dt - datetime.now()).total_seconds()\n        print(f\"[{datetime.now().strftime('%H:%M:%S')}] รอบถัดไป: {t_str} (อีก {wait_seconds/60:.1f} นาที)\")\n        time.sleep(max(0, wait_seconds))\n        day_thai = get_thai_day()\n        if t_str == \"07:30\":\n            if day_thai in day_subjects: send_line_flex(day_thai, day_subjects[day_thai])\n        elif day_thai in text_reminders and t_str in text_reminders[day_thai]:\n            send_line_text(text_reminders[day_thai][t_str])\n        time.sleep(2)`;
+
+            document.getElementById('output-code').value = pythonTemplate;
+            document.getElementById('result-area').classList.remove('hidden');
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+
+        function copyCode() { const textarea = document.getElementById('output-code'); textarea.select(); document.execCommand('copy'); alert('คัดลอกโค้ดสำเร็จ!'); }
+
+        renderEditor();
+    </script>
+</body>
+</html>

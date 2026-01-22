@@ -6,8 +6,8 @@
     <meta name="description" content="Kabintify ระบบแจ้งเตือนเวลาเรียนผ่านไลน์ ของวิทยาลัยการอาชีพกบินทร์บุรี">
     <link rel="canonical" href="https://kabintify.site/" />
     <title>Kabintify | แจ้งเตือนเวลาเรียนผ่านไลน์</title>
-    <link rel="icon" type="image/png" href="bell.png">
-    <link rel="apple-touch-icon" href="bell.png">
+    <link rel="icon" type="image/png" href="images/bell.png">
+    <link rel="apple-touch-icon" href="images/bell.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -23,7 +23,10 @@
             <div class="text-xl font-bold text-blue-600">Kabintify</div>
             <div class="space-x-4 md:space-x-6">
                 <a href="#home" class="hover:text-blue-600 transition font-medium text-sm md:text-base">หน้าแรก</a>
+                <a href="#class" class="hover:text-blue-600 transition font-medium text-sm md:text-base">ตารางเรียน</a>
                 <a href="#about" class="hover:text-blue-600 transition font-medium text-sm md:text-base">เกี่ยวกับระบบ</a>
+                <a href="classpy.html" target="_blank" class="hover:text-blue-600 transition font-medium text-sm md:text-base">แก้ไขโค้ดตารางเรียน</a>
+                <a href="https://github.com/windysurface/kabintify" target="_blank" class="hover:text-gray-900 transition font-medium text-sm md:text-base">ดู Source Code(Github)</a>
             </div>
         </div>
     </nav>
@@ -38,20 +41,32 @@
                     <a href="https://line.me/ti/p/@072wxnak" target="_blank" class="inline-flex items-center bg-[#06C755] text-white px-7 py-3 rounded-full font-semibold hover:bg-[#05b34c] transition shadow-lg transform hover:-translate-y-1">
                         <i class="fab fa-line text-2xl mr-2"></i> เพิ่มเพื่อนใน Line
                     </a>
+
+                    <a href="#class" class="inline-flex items-center bg-blue-500 text-white px-7 py-3 rounded-full font-semibold hover:bg-blue-600 transition shadow-lg transform hover:-translate-y-1">
+                        <i class="fas fa-calendar-day text-xl mr-2"></i> ตารางเรียน
+                    </a>
+
+                    <a href="classpy.html" target="_blank" class="inline-flex items-center bg-blue-700 text-white px-7 py-3 rounded-full font-semibold hover:bg-blue-800 transition shadow-lg transform hover:-translate-y-1">
+                        <i class="fas fa-edit text-xl mr-2"></i> แก้ไขโค้ดตารางเรียน
+                    </a>
+
+                    <a href="https://github.com/windysurface/kabintify" target="_blank" class="inline-flex items-center bg-gray-800 text-white px-7 py-3 rounded-full font-semibold hover:bg-gray-900 transition shadow-lg transform hover:-translate-y-1">
+                        <i class="fab fa-github text-2xl mr-2"></i> ดู Source Code(Github)
+                    </a>
                 </div>
             </div>
             <div class="md:w-1/2 flex justify-center">
                 <div class="w-64 h-64 bg-blue-100 rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-xl">
-                    <img src="kabin.jpg" alt="Logo Kabin" class="w-full h-full object-cover">
+                    <img src="images/kabin.jpg" alt="Logo Kabin" class="w-full h-full object-cover">
                 </div>
             </div>
         </div>
     </section>
 
-    <section class="pb-20 px-6">
+    <section id="class" class="pb-20 px-6 scroll-mt-24">
         <div class="max-w-5xl mx-auto">
             <div class="rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
-                <img src="class.jpg" alt="Preview System" class="w-full h-auto object-cover">
+                <img src="images/class.jpg" alt="Preview System" class="w-full h-auto object-cover">
             </div>
         </div>
     </section>
@@ -90,6 +105,12 @@
                             <span class="font-bold min-w-[100px] text-blue-600">Line ID:</span>
                             <a href="https://line.me/ti/p/@072wxnak" target="_blank" class="text-[#00b900] font-bold hover:underline flex items-center">
                                 <i class="fab fa-line mr-2 text-xl"></i> @072wxnak
+                            </a>
+                        </div>
+                        <div class="flex items-center">
+                            <span class="font-bold min-w-[100px] text-blue-600">GitHub:</span>
+                            <a href="https://github.com/windysurface/kabintify" target="_blank" class="text-gray-900 font-bold hover:underline flex items-center">
+                                <i class="fab fa-github mr-2 text-xl"></i> Kabintify Source Code
                             </a>
                         </div>
                     </div>
