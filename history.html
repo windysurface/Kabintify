@@ -16,33 +16,52 @@
         </div>
 
         <div id="history-list" class="space-y-4">
-            <p class="text-center text-gray-400">กำลังโหลดข้อมูล...</p>
+            <p class="text-center text-gray-400">กำลังโหลดข้อมูลจาก Google Sheets...</p>
         </div>
     </div>
 
     <script>
         async function loadHistory() {
             try {
-                // เปลี่ยน URL เป็นของ Hugging Face Space คุณ
+                // ดึงข้อมูลจาก Hugging Face Space ของคุณ
                 const response = await fetch('https://windysurface-kabintify.hf.space/get-history');
                 const data = await response.json();
                 const container = document.getElementById('history-list');
                 
-                if (data.length === 0) {
-                    container.innerHTML = '<p class="text-center text-gray-400">ยังไม่มีประวัติการประกาศ</p>';
+                // ตรวจสอบว่ามี Error จากฝั่ง Backend หรือไม่
+                if (data.error) {
+                    container.innerHTML = `<p class="text-center text-red-400">เกิดข้อผิดพลาด: ${data.error}</p>`;
                     return;
                 }
 
+                if (!data || data.length === 0) {
+                    container.innerHTML = '<p class="text-center text-gray-400">ยังไม่มีประวัติการประกาศในระบบ</p>';
+                    return;
+                }
+
+                // ✅ แก้ไขจุดสำคัญ: เปลี่ยนชื่อตัวแปรให้ตรงกับหัวตารางใน Google Sheet (Timestamp, Message)
                 container.innerHTML = data.map(item => `
-                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100">
-                        <div class="text-xs text-blue-500 mb-2">${item.timestamp}</div>
-                        <div class="text-gray-700 leading-relaxed">${item.message.replace(/\n/g, '<br>')}</div>
+                    <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-100 transition hover:shadow-md">
+                        <div class="text-xs text-blue-500 mb-2 font-medium">
+                            <i class="far fa-clock mr-1"></i> ${item.Timestamp || 'ไม่ระบุเวลา'}
+                        </div>
+                        <div class="text-gray-700 leading-relaxed">
+                            ${(item.Message || '').replace(/\n/g, '<br>')}
+                        </div>
                     </div>
                 `).join('');
+                
             } catch (err) {
-                document.getElementById('history-list').innerHTML = '<p class="text-center text-red-400">โหลดข้อมูลไม่สำเร็จ</p>';
+                console.error('Fetch error:', err);
+                document.getElementById('history-list').innerHTML = 
+                    '<div class="text-center py-10">' +
+                    '<p class="text-red-400 mb-2">โหลดข้อมูลไม่สำเร็จ</p>' +
+                    '<p class="text-gray-400 text-xs">กรุณาตรวจสอบว่าเซิร์ฟเวอร์บน Hugging Face เปิดอยู่</p>' +
+                    '</div>';
             }
         }
+
+        // เริ่มโหลดข้อมูลทันทีที่เปิดหน้าเว็บ
         loadHistory();
     </script>
 </body>
