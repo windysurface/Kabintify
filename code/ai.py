@@ -106,17 +106,17 @@ def send_line():
         "to": USER_ID,
         "messages": [{
             "type": "flex",
-            "altText": "📢 มีประกาศใหม่จาก Kabintify Admin",
+            "altText": "📢 มีประกาศใหม่จาก Kabintify",
             "contents": {
                 "type": "bubble",
                 "header": {
                     "type": "box", "layout": "vertical",
-                    "contents": [{"type": "text", "text": "🎙️ KABINTIFY ADMIN", "weight": "bold", "color": "#4f46e5", "size": "sm"}]
+                    "contents": [{"type": "text", "text": "🎙️ KABINTIFY", "weight": "bold", "color": "#4f46e5", "size": "sm"}]
                 },
                 "body": {
                     "type": "box", "layout": "vertical",
                     "contents": [
-                        {"type": "text", "text": "สรุปใจความสำคัญ", "weight": "bold", "size": "xl", "margin": "md"},
+                        {"type": "text", "text": "ประชาสัมพันธ์", "weight": "bold", "size": "xl", "margin": "md"},
                         {"type": "separator", "margin": "lg"},
                         {"type": "text", "text": msg_content, "wrap": True, "margin": "lg", "size": "sm", "color": "#334155"}
                     ]
@@ -126,11 +126,7 @@ def send_line():
                     "contents": [
                         {
                             "type": "button", "style": "primary", "color": "#4f46e5",
-                            "action": {"type": "uri", "label": "🌐 ดูประกาศบนเว็บไซต์", "uri": "https://kabintify.site"}
-                        },
-                        {
-                            "type": "button", "style": "secondary",
-                            "action": {"type": "uri", "label": "📞 ติดต่อสอบถาม", "uri": "tel:037213123"}
+                            "action": {"type": "uri", "label": "🌐 ดูประกาศบนเว็บไซต์", "uri": "https://kabintify.site/history"}
                         },
                         {"type": "text", "text": "วิทยาลัยการอาชีพกบินทร์บุรี", "size": "xs", "color": "#94a3b8", "align": "center", "margin": "md"}
                     ]
