@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kabintify Admin Console - Maximum Security</title>
+    <title>Kabintify Admin Console - Max Security & Logs</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Sarabun', sans-serif; } </style>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&family=Fira+Code:wght@400&display=swap" rel="stylesheet">
+    <style> 
+        body { font-family: 'Sarabun', sans-serif; } 
+        .log-font { font-family: 'Fira Code', monospace; }
+    </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
 
@@ -43,15 +46,29 @@
         <div id="aiSection">
             <label class="block text-slate-700 font-bold mb-2">เลือกไฟล์เสียงประกาศ (.m4a, .mp3)</label>
             <input type="file" id="audioFile" accept="audio/*" class="w-full p-3 border border-slate-300 rounded-xl mb-6 bg-slate-50">
-            <button onclick="processAudio()" id="btnProcess" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-md transition-all">🚀 ประมวลผลด้วย Gemini</button>
+            <button onclick="processAudio()" id="btnProcess" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-md transition-all">🚀 เริ่มประมวลผล</button>
         </div>
 
-        <div id="loading" class="hidden mt-6 text-center text-indigo-600 font-bold animate-pulse">กำลังสรุปผล... ⏳</div>
+        <div id="logContainer" class="hidden mt-6 bg-slate-900 text-green-400 p-4 rounded-xl shadow-inner log-font text-xs overflow-y-auto max-h-32">
+            <div id="statusLogs"></div>
+        </div>
+
+        <div id="loading" class="hidden mt-4 text-center text-indigo-600 font-bold animate-pulse">AI กำลังทำงาน... ⏳</div>
 
         <div id="reviewSection" class="hidden mt-8 border-t border-slate-100 pt-6">
-            <label id="reviewLabel" class="block text-slate-700 font-bold mb-2">ตรวจสอบข้อมูล</label>
-            <textarea id="summaryResult" rows="8" class="w-full p-4 border border-slate-300 rounded-xl shadow-inner focus:ring-2 focus:ring-green-500 outline-none" placeholder="พิมพ์ข้อความที่นี่..."></textarea>
-            <button onclick="sendToLine()" class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all">🚀 ส่งเข้า LINE กลุ่มวิทยาลัย</button>
+            <div class="flex justify-between items-center mb-2">
+                <label id="reviewLabel" class="text-slate-700 font-bold">ผลการสรุปข้อมูล</label>
+                <button onclick="toggleRaw()" class="text-indigo-500 hover:text-indigo-700 text-xs font-bold border border-indigo-200 px-2 py-1 rounded-lg">🔍 ดูข้อความดิบ</button>
+            </div>
+            
+            <textarea id="summaryResult" rows="8" class="w-full p-4 border border-slate-300 rounded-xl shadow-inner focus:ring-2 focus:ring-green-500 outline-none mb-4"></textarea>
+            
+            <div id="rawBox" class="hidden mb-4 p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 italic">
+                <p class="font-bold text-slate-400 mb-1 border-b pb-1">ถอดเสียงต้นฉบับ:</p>
+                <div id="rawDisplay"></div>
+            </div>
+
+            <button onclick="sendToLine()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all">🚀 ส่งเข้า LINE กลุ่มวิทยาลัย</button>
         </div>
     </div>
 
@@ -65,85 +82,97 @@
             }
         };
 
-        // ✅ ฟังก์ชันสลับโหมด (แก้ไขให้กลับมาทำงานได้)
-        function switchMode(mode) {
-            currentMode = mode;
-            const tabAI = document.getElementById('tabAI');
-            const tabManual = document.getElementById('tabManual');
-            const aiSection = document.getElementById('aiSection');
-            const reviewSection = document.getElementById('reviewSection');
-            const reviewLabel = document.getElementById('reviewLabel');
-            const summaryResult = document.getElementById('summaryResult');
-
-            if (mode === 'ai') {
-                tabAI.classList.add('bg-white', 'shadow', 'text-indigo-600');
-                tabManual.classList.remove('bg-white', 'shadow', 'text-indigo-600');
-                aiSection.classList.remove('hidden');
-                reviewSection.classList.add('hidden');
-                reviewLabel.innerText = "2. ตรวจทานข้อมูลจาก AI";
-            } else {
-                tabManual.classList.add('bg-white', 'shadow', 'text-indigo-600');
-                tabAI.classList.remove('bg-white', 'shadow', 'text-indigo-600');
-                aiSection.classList.add('hidden');
-                reviewSection.classList.remove('hidden');
-                reviewLabel.innerText = "พิมพ์ข้อความที่ต้องการส่ง";
-                summaryResult.value = "";
-            }
+        function addLog(msg) {
+            const container = document.getElementById('logContainer');
+            const logDiv = document.getElementById('statusLogs');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div><span class="text-slate-500">[${time}]</span> ${msg}</div>`;
+            container.classList.remove('hidden');
+            container.scrollTop = container.scrollHeight;
         }
-
-        async function handleLogin() {
-            const u = document.getElementById('userInput').value;
-            const p = document.getElementById('passInput').value;
-            const resp = await fetch('/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: u, password: p })
-            });
-            const data = await resp.json();
-            if (data.success) {
-                localStorage.setItem('isKabinLoggedIn', 'true');
-                localStorage.setItem('kabinKey', p);
-                location.reload();
-            } else alert("รหัสผ่านไม่ถูกต้อง");
-        }
-
-        function logout() { localStorage.clear(); location.reload(); }
 
         async function processAudio() {
             const fileInput = document.getElementById('audioFile');
             if (fileInput.files.length === 0) return alert("เลือกไฟล์ก่อนครับ");
 
+            document.getElementById('statusLogs').innerHTML = "";
+            addLog("📁 เริ่มอัปโหลดไฟล์: " + fileInput.files[0].name);
+            
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
-            
             document.getElementById('loading').classList.remove('hidden');
-            const resp = await fetch('/process', {
+
+            try {
+                const resp = await fetch('/process', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('kabinKey') },
+                    body: formData
+                });
+                addLog("☁️ ไฟล์ถึง Server แล้ว กำลังรอ AI ประมวลผล (10-20 วินาที)...");
+                
+                const data = await resp.json();
+                if (data.success) {
+                    addLog("✅ AI ทำงานสำเร็จ! พร้อมสรุปข้อมูล");
+                    document.getElementById('summaryResult').value = data.summary;
+                    document.getElementById('rawDisplay').innerText = data.raw;
+                    document.getElementById('reviewSection').classList.remove('hidden');
+                } else {
+                    addLog("❌ Error: " + data.error);
+                }
+            } catch (err) {
+                addLog("🚫 ล้มเหลว: ไม่สามารถติดต่อ Server ได้");
+            } finally {
+                document.getElementById('loading').classList.add('hidden');
+            }
+        }
+
+        function toggleRaw() {
+            document.getElementById('rawBox').classList.toggle('hidden');
+        }
+
+        function switchMode(mode) {
+            currentMode = mode;
+            const ui = {
+                ai: document.getElementById('aiSection'),
+                rev: document.getElementById('reviewSection'),
+                label: document.getElementById('reviewLabel')
+            };
+            if (mode === 'ai') {
+                ui.ai.classList.remove('hidden'); ui.rev.classList.add('hidden');
+                ui.label.innerText = "ผลการสรุปข้อมูล";
+            } else {
+                ui.ai.classList.add('hidden'); ui.rev.classList.remove('hidden');
+                ui.label.innerText = "พิมพ์ข้อความที่ต้องการส่ง";
+                document.getElementById('summaryResult').value = "";
+            }
+        }
+
+        async function handleLogin() {
+            const u = document.getElementById('userInput').value, p = document.getElementById('passInput').value;
+            const resp = await fetch('/login', {
                 method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('kabinKey') },
-                body: formData
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: u, password: p })
             });
-            const data = await resp.json();
-            document.getElementById('loading').classList.add('hidden');
-            if (data.success) {
-                document.getElementById('summaryResult').value = data.summary;
-                document.getElementById('reviewSection').classList.remove('hidden');
-            } else alert(data.error);
+            if ((await resp.json()).success) {
+                localStorage.setItem('isKabinLoggedIn', 'true');
+                localStorage.setItem('kabinKey', p);
+                location.reload();
+            } else alert("ล็อกอินไม่สำเร็จ");
         }
 
         async function sendToLine() {
-            const text = document.getElementById('summaryResult').value;
-            if (!text.trim()) return alert("ใส่ข้อความก่อนส่งครับ");
+            const msg = document.getElementById('summaryResult').value;
+            if (!msg.trim()) return alert("กรุณาใส่ข้อความ");
             const resp = await fetch('/send-line', {
                 method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + localStorage.getItem('kabinKey')
-                },
-                body: JSON.stringify({ message: text })
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('kabinKey') },
+                body: JSON.stringify({ message: msg })
             });
-            const data = await resp.json();
-            if (data.success) alert("✅ ส่งเรียบร้อย!");
+            if ((await resp.json()).success) alert("🚀 ส่ง LINE เรียบร้อย!");
         }
+
+        function logout() { localStorage.clear(); location.reload(); }
     </script>
 </body>
 </html>

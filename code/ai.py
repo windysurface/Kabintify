@@ -16,11 +16,8 @@ ADMIN_PASS = os.getenv("ADMIN_PASS")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# ✅ ฟังก์ชันสำหรับตรวจสอบกุญแจ (Authorization Header)
 def is_authorized(auth_header):
-    if not auth_header:
-        return False
-    # ตรวจสอบว่ากุญแจที่ส่งมาตรงกับ ADMIN_PASS หรือไม่
+    if not auth_header: return False
     return auth_header == f"Bearer {ADMIN_PASS}"
 
 @app.route('/')
@@ -37,7 +34,6 @@ def login():
 
 @app.route('/process', methods=['POST'])
 def process_audio():
-    # 🛡️ ล็อคประตูที่ 1: เช็กสิทธิ์ก่อนประมวลผล
     if not is_authorized(request.headers.get('Authorization')):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
 
@@ -49,6 +45,7 @@ def process_audio():
     audio_file.save(temp_path)
 
     try:
+        # 1. อัปโหลดไฟล์ไปยัง Gemini API
         upload_url = f"https://generativelanguage.googleapis.com/upload/v1beta/files?key={API_KEY}"
         with open(temp_path, 'rb') as f:
             headers = {"X-Goog-Upload-Protocol": "multipart"}
@@ -61,26 +58,45 @@ def process_audio():
         file_data = r_upload.json()['file']
         file_uri, file_name = file_data['uri'], file_data['name']
 
+        # 2. รอจนกว่าสถานะจะเป็น ACTIVE
         for _ in range(20):
             if requests.get(f"https://generativelanguage.googleapis.com/v1beta/{file_name}?key={API_KEY}").json().get('state') == 'ACTIVE':
                 break
             time.sleep(1)
 
+        # 3. สั่งให้ถอดความและสรุปผลแยกส่วนกัน
         gen_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
-        payload = {"contents": [{"parts": [{"text": "สรุปใจความสำคัญจากเสียงนี้เป็นข้อๆ"}, {"fileData": {"mimeType": "audio/x-m4a", "fileUri": file_uri}}]}]}
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"text": "จงถอดข้อความจากเสียงนี้ทั้งหมดอย่างละเอียด (Transcription) จากนั้นคั่นด้วยคำว่า [SUMMARY_START] แล้วสรุปใจความสำคัญเป็นข้อๆ (Summary)"},
+                    {"fileData": {"mimeType": "audio/x-m4a", "fileUri": file_uri}}
+                ]
+            }]
+        }
         
         r_gen = requests.post(gen_url, json=payload, timeout=25)
-        summary_text = r_gen.json()['candidates'][0]['content']['parts'][0]['text']
+        full_result = r_gen.json()['candidates'][0]['content']['parts'][0]['text']
+
+        # แยกข้อความดิบออกจากบทสรุป
+        if "[SUMMARY_START]" in full_result:
+            raw_text, summary_text = full_result.split("[SUMMARY_START]")
+        else:
+            raw_text = "ไม่สามารถแยกข้อความดิบได้"
+            summary_text = full_result
 
         if os.path.exists(temp_path): os.remove(temp_path)
-        return jsonify({"success": True, "summary": summary_text})
+        return jsonify({
+            "success": True, 
+            "summary": summary_text.strip(), 
+            "raw": raw_text.strip()
+        })
     except Exception as e:
         if os.path.exists(temp_path): os.remove(temp_path)
         return jsonify({"success": False, "error": str(e)}), 500
 
 @app.route('/send-line', methods=['POST'])
 def send_line():
-    # 🛡️ ล็อคประตูที่ 2: เช็กสิทธิ์ก่อนส่ง LINE
     if not is_authorized(request.headers.get('Authorization')):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
 
