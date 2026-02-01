@@ -1,86 +1,118 @@
-import os
-import time
-import requests
-from flask import Flask, request, jsonify, send_from_directory
-from flask_cors import CORS
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kabintify Admin Console - Cloud Version</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Sarabun', sans-serif; } </style>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
 
-app = Flask(__name__)
-CORS(app)
+    <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl border border-slate-200">
+        <div class="flex items-center gap-4 mb-8">
+            <div class="bg-blue-600 text-white p-3 rounded-xl shadow-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">Kabintify Cloud</h1>
+                <p class="text-slate-500 text-sm">ระบบสรุปเสียงประชาสัมพันธ์ วิทยาลัยการอาชีพกบินทร์บุรี</p>
+            </div>
+        </div>
 
-# ดึงข้อมูลจาก Environment Variables (Secret)
-API_KEY = os.getenv("GEMINI_API_KEY")
-LINE_TOKEN = os.getenv("LINE_TOKEN")
-USER_ID = os.getenv("USER_ID")
+        <div class="mb-6">
+            <label class="block text-slate-700 font-bold mb-2">1. เลือกไฟล์เสียงประกาศ (.m4a, .mp3)</label>
+            <input type="file" id="audioFile" accept="audio/*" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-slate-50 text-slate-600">
+        </div>
 
-# ✅ เพิ่มส่วนนี้: สั่งให้แสดงหน้า aivoice.html เมื่อเข้า URL ของ Render
-@app.route('/')
-def index():
-    # สั่งให้ย้อนออกจากโฟลเดอร์ code เพื่อไปดึงไฟล์ aivoice.html ที่อยู่ด้านนอก
-    return send_from_directory('../', 'aivoice.html')
+        <button onclick="processAudio()" id="btnProcess" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-md flex justify-center items-center gap-2 text-lg">
+            ✨ เริ่มการสรุปผลด้วย Gemini 2.5
+        </button>
 
-@app.route('/process', methods=['POST'])
-def process_audio():
-    if 'file' not in request.files:
-        return jsonify({"success": False, "error": "ไม่พบไฟล์"}), 400
+        <div id="loading" class="hidden mt-6 text-center">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mb-2"></div>
+            <p class="text-blue-600 font-medium">AI กำลังประมวลผลบน Cloud... กรุณารอสักครู่ ⏳</p>
+        </div>
 
-    audio_file = request.files['file']
-    temp_path = "temp_voice.m4a"
-    audio_file.save(temp_path)
+        <div id="reviewSection" class="hidden mt-8 border-t border-slate-100 pt-6">
+            <label class="block text-slate-700 font-bold mb-2">2. ตรวจทานข้อมูล (สามารถแก้ไขได้)</label>
+            <textarea id="summaryResult" rows="8" class="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-green-500 font-sans text-slate-800 bg-white shadow-inner"></textarea>
+            
+            <button onclick="sendToLine()" id="btnSend" class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg flex justify-center items-center gap-2 text-lg">
+                🚀 ส่งเข้า LINE กลุ่มวิทยาลัย
+            </button>
+        </div>
+    </div>
 
-    try:
-        # 1. อัปโหลดไฟล์ไปที่ Google Cloud
-        upload_url = f"https://generativelanguage.googleapis.com/upload/v1beta/files?key={API_KEY}"
-        with open(temp_path, 'rb') as f:
-            headers = {"X-Goog-Upload-Protocol": "multipart"}
-            files = {
-                'metadata': (None, '{"file": {"display_name": "kabintify_audio"}}', 'application/json'),
-                'file': (temp_path, f, 'audio/x-m4a')
+    <script>
+        // ฟังก์ชันประมวลผลเสียง
+        async function processAudio() {
+            const fileInput = document.getElementById('audioFile');
+            const btn = document.getElementById('btnProcess');
+            const loading = document.getElementById('loading');
+            const reviewSection = document.getElementById('reviewSection');
+
+            if (fileInput.files.length === 0) return alert("กรุณาเลือกไฟล์เสียงก่อนจั๊ฟ!");
+
+            // UI Feedback
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            loading.classList.remove('hidden');
+            reviewSection.classList.add('hidden');
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                // เปลี่ยนเป็น Relative Path เพื่อรองรับ Cloud Deployment
+                const response = await fetch('/process', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('summaryResult').value = data.summary;
+                    reviewSection.classList.remove('hidden');
+                } else {
+                    alert("เกิดข้อผิดพลาดจาก AI: " + data.error);
+                }
+            } catch (err) {
+                alert("เชื่อมต่อ Server ไม่ได้! ตรวจสอบว่าระบบบน Render เป็นสถานะ Live หรือยัง?");
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                loading.classList.add('hidden');
             }
-            r_upload = requests.post(upload_url, headers=headers, files=files)
-        
-        upload_data = r_upload.json()
-        file_uri = upload_data['file']['uri']
-        file_name = upload_data['file']['name']
-
-        # 2. รอประมวลผล (ACTIVE)
-        check_url = f"https://generativelanguage.googleapis.com/v1beta/{file_name}?key={API_KEY}"
-        for _ in range(15):
-            if requests.get(check_url).json().get('state') == 'ACTIVE':
-                break
-            time.sleep(2)
-
-        # 3. สั่งสรุปผลด้วย Gemini 2.5 Flash
-        gen_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
-        payload = {
-            "contents": [{
-                "parts": [
-                    {"text": "คุณคือผู้สรุปประกาศยามเช้าของวิทยาลัยการอาชีพกบินทร์บุรี สรุปเป็นข้อๆ สั้นๆ เน้นเรื่องวันเรียน วันสอบ และงานค้าง"},
-                    {"fileData": {"mimeType": "audio/x-m4a", "fileUri": file_uri}}
-                ]
-            }]
         }
-        
-        r_gen = requests.post(gen_url, json=payload)
-        summary_text = r_gen.json()['candidates'][0]['content']['parts'][0]['text']
 
-        if os.path.exists(temp_path): os.remove(temp_path)
-        return jsonify({"success": True, "summary": summary_text})
+        // ฟังก์ชันส่งเข้า LINE
+        async function sendToLine() {
+            const text = document.getElementById('summaryResult').value;
+            if (!confirm("ยืนยันการส่งข้อมูลสรุปเข้า LINE หรือไม่?")) return;
 
-    except Exception as e:
-        if os.path.exists(temp_path): os.remove(temp_path)
-        return jsonify({"success": False, "error": str(e)}), 500
+            try {
+                // เปลี่ยนเป็น Relative Path
+                const response = await fetch('/send-line', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await response.json();
 
-@app.route('/send-line', methods=['POST'])
-def send_line():
-    data = request.json
-    message = data.get('message')
-    url = "https://api.line.me/v2/bot/message/push"
-    headers = {"Content-Type": "application/json", "Authorization": f"Bearer {LINE_TOKEN}"}
-    payload = {"to": USER_ID, "messages": [{"type": "text", "text": f"📢 **สรุปโดย Gemini 2.5 (Cloud)**\n\n{message}"}]}
-    resp = requests.post(url, headers=headers, json=payload)
-    return jsonify({"success": resp.status_code == 200})
-
-if __name__ == '__main__':
-    # รองรับการรัน Port แบบไดนามิกบน Cloud
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port)
+                if (data.success) {
+                    alert("✅ ส่งเข้า LINE เรียบร้อยแล้ว!");
+                    location.reload();
+                } else {
+                    alert("❌ ส่งไม่สำเร็จ: " + data.error);
+                }
+            } catch (err) {
+                alert("เกิดปัญหาในการเชื่อมต่อ API");
+            }
+        }
+    </script>
+</body>
+</html>
