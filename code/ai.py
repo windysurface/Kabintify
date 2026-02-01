@@ -7,15 +7,17 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# ดึงข้อมูลจาก Environment Variables (Secret)
+# --- ดึงข้อมูลความลับจาก Environment Variables ---
 API_KEY = os.getenv("GEMINI_API_KEY")
 LINE_TOKEN = os.getenv("LINE_TOKEN")
 USER_ID = os.getenv("USER_ID")
+# -----------------------------------------------
 
-# ✅ เพิ่มส่วนนี้: สั่งให้แสดงหน้า aivoice.html เมื่อเข้า URL ของ Render
+# ✅ เพิ่มส่วนนี้: สั่งให้แสดงหน้า aivoice.html เมื่อเข้าหน้าแรก
 @app.route('/')
 def index():
-    # สั่งให้ย้อนออกจากโฟลเดอร์ code เพื่อไปดึงไฟล์ aivoice.html ที่อยู่ด้านนอก
+    # เนื่องจากไฟล์ ai.py อยู่ในโฟลเดอร์ code แต่ aivoice.html อยู่ข้างนอก (Root)
+    # เราจึงใช้ '../' เพื่อย้อนกลับไปหาไฟล์ที่ Root folder ครับ
     return send_from_directory('../', 'aivoice.html')
 
 @app.route('/process', methods=['POST'])
@@ -28,7 +30,7 @@ def process_audio():
     audio_file.save(temp_path)
 
     try:
-        # 1. อัปโหลดไฟล์ไปที่ Google Cloud
+        # 1. อัปโหลดไฟล์ไปยัง Google Cloud
         upload_url = f"https://generativelanguage.googleapis.com/upload/v1beta/files?key={API_KEY}"
         with open(temp_path, 'rb') as f:
             headers = {"X-Goog-Upload-Protocol": "multipart"}
@@ -49,12 +51,12 @@ def process_audio():
                 break
             time.sleep(2)
 
-        # 3. สั่งสรุปผลด้วย Gemini 2.5 Flash
+        # 3. สรุปผลด้วย Gemini 2.5 Flash
         gen_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
         payload = {
             "contents": [{
                 "parts": [
-                    {"text": "คุณคือผู้สรุปประกาศยามเช้าของวิทยาลัยการอาชีพกบินทร์บุรี สรุปเป็นข้อๆ สั้นๆ เน้นเรื่องวันเรียน วันสอบ และงานค้าง"},
+                    {"text": "สรุปประกาศวิทยาลัยการอาชีพกบินทร์บุรีเป็นข้อๆ สั้นๆ เน้นเรื่องวันเรียน วันสอบ และการจองชุดนักศึกษา"},
                     {"fileData": {"mimeType": "audio/x-m4a", "fileUri": file_uri}}
                 ]
             }]
@@ -76,11 +78,10 @@ def send_line():
     message = data.get('message')
     url = "https://api.line.me/v2/bot/message/push"
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {LINE_TOKEN}"}
-    payload = {"to": USER_ID, "messages": [{"type": "text", "text": f"📢 **สรุปโดย Gemini 2.5 (Cloud)**\n\n{message}"}]}
+    payload = {"to": USER_ID, "messages": [{"type": "text", "text": f"📢 **สรุปโดย Kabintify (Gemini 2.5)**\n\n{message}"}]}
     resp = requests.post(url, headers=headers, json=payload)
     return jsonify({"success": resp.status_code == 200})
 
 if __name__ == '__main__':
-    # รองรับการรัน Port แบบไดนามิกบน Cloud
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
