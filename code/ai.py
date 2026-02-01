@@ -7,12 +7,9 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# ดึงค่าจาก Environment Variables ของ Render
 API_KEY = os.getenv("GEMINI_API_KEY")
 LINE_TOKEN = os.getenv("LINE_TOKEN")
 USER_ID = os.getenv("USER_ID")
-
-# หาตำแหน่งของโฟลเดอร์ Root เพื่อดึงไฟล์ aivoice.html
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 @app.route('/')
@@ -29,7 +26,7 @@ def process_audio():
     audio_file.save(temp_path)
 
     try:
-        # 1. อัปโหลดไฟล์ไปที่ Google Cloud
+        # 1. อัปโหลดไป Google (จุดนี้เน็ตช้าอาจจะติดขัด ต้องรอจนเสร็จ)
         upload_url = f"https://generativelanguage.googleapis.com/upload/v1beta/files?key={API_KEY}"
         with open(temp_path, 'rb') as f:
             headers = {"X-Goog-Upload-Protocol": "multipart"}
@@ -39,29 +36,30 @@ def process_audio():
             }
             r_upload = requests.post(upload_url, headers=headers, files=files)
         
-        file_data = r_upload.json()['file']
-        file_uri = file_data['uri']
-        file_name = file_data['name']
+        upload_data = r_upload.json()
+        file_uri = upload_data['file']['uri']
+        file_name = upload_data['file']['name']
 
-        # 2. รอให้ไฟล์พร้อม (ACTIVE)
-        check_url = f"https://generativelanguage.googleapis.com/v1beta/{file_name}?key={API_KEY}"
-        for _ in range(15):
-            if requests.get(check_url).json().get('state') == 'ACTIVE':
+        # 2. ปรับการรอให้ "เร็วขึ้น" เพื่อแข่งกับเวลา 30 วินาทีของ Render
+        # ไฟล์ 20 นาที Gemini มักจะประมวลผลประมาณ 10-15 วินาที
+        for _ in range(20): # เช็ค 20 ครั้ง
+            status_resp = requests.get(f"https://generativelanguage.googleapis.com/v1beta/{file_name}?key={API_KEY}").json()
+            if status_resp.get('state') == 'ACTIVE':
                 break
-            time.sleep(2)
+            time.sleep(1) # รอแค่ 1 วินาทีต่อรอบ
 
-        # 3. สั่งสรุปผลด้วย Gemini 2.5 Flash
+        # 3. สรุปผล (สั่งให้สรุปแบบกระชับเพื่อลดเวลา Generation)
         gen_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
         payload = {
             "contents": [{
                 "parts": [
-                    {"text": "สรุปประกาศยามเช้าวิทยาลัยการอาชีพกบินทร์บุรีเป็นข้อๆ สั้นๆ เน้นเรื่อง วันเรียน วันสอบ และการจองชุดนักศึกษา"},
+                    {"text": "สรุปใจความสำคัญจากเสียงนี้เป็นข้อๆ อย่างรวดเร็วและแม่นยำที่สุด"},
                     {"fileData": {"mimeType": "audio/x-m4a", "fileUri": file_uri}}
                 ]
             }]
         }
         
-        r_gen = requests.post(gen_url, json=payload)
+        r_gen = requests.post(gen_url, json=payload, timeout=25) # ตั้ง Timeout ภายในไว้ด้วย
         summary_text = r_gen.json()['candidates'][0]['content']['parts'][0]['text']
 
         if os.path.exists(temp_path): os.remove(temp_path)
@@ -69,7 +67,7 @@ def process_audio():
 
     except Exception as e:
         if os.path.exists(temp_path): os.remove(temp_path)
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": False, "error": "ระบบใช้เวลานานเกินไปหรือเน็ตช้า กรุณาลองใหม่ด้วยไฟล์ที่สั้นลงเล็กน้อยจั๊ฟ" if "timeout" in str(e).lower() else str(e)}), 500
 
 @app.route('/send-line', methods=['POST'])
 def send_line():
@@ -77,7 +75,7 @@ def send_line():
     message = data.get('message')
     url = "https://api.line.me/v2/bot/message/push"
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {LINE_TOKEN}"}
-    payload = {"to": USER_ID, "messages": [{"type": "text", "text": f"📢 **สรุปโดย Gemini 2.5 (Cloud)**\n\n{message}"}]}
+    payload = {"to": USER_ID, "messages": [{"type": "text", "text": f"📢 **สรุปจากวิทยาลัย (Cloud)**\n\n{message}"}]}
     resp = requests.post(url, headers=headers, json=payload)
     return jsonify({"success": resp.status_code == 200})
 
