@@ -3,43 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kabintify Admin Console - Cloud Version</title>
+    <title>Kabintify Admin Console - Multi-Mode</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
     <style> body { font-family: 'Sarabun', sans-serif; } </style>
 </head>
-<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+<body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
 
     <div class="bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl border border-slate-200">
         <div class="flex items-center gap-4 mb-8">
-            <div class="bg-blue-600 text-white p-3 rounded-xl shadow-lg">
+            <div class="bg-indigo-600 text-white p-3 rounded-xl shadow-lg">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z" />
                 </svg>
             </div>
             <div>
-                <h1 class="text-2xl font-bold text-slate-800">Kabintify Cloud</h1>
-                <p class="text-slate-500 text-sm">ระบบสรุปเสียงประชาสัมพันธ์ วิทยาลัยการอาชีพกบินทร์บุรี</p>
+                <h1 class="text-2xl font-bold text-slate-800">Kabintify Admin</h1>
+                <p class="text-slate-500 text-sm">วิทยาลัยการอาชีพกบินทร์บุรี</p>
             </div>
         </div>
 
-        <div class="mb-6">
-            <label class="block text-slate-700 font-bold mb-2">1. เลือกไฟล์เสียงประกาศ (.m4a, .mp3)</label>
-            <input type="file" id="audioFile" accept="audio/*" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-blue-500 bg-slate-50 text-slate-600">
+        <div class="flex bg-slate-100 p-1 rounded-xl mb-6">
+            <button onclick="switchMode('ai')" id="tabAI" class="flex-1 py-2 px-4 rounded-lg font-bold transition-all bg-white shadow text-indigo-600">
+                ✨ โหมด AI สรุปผล
+            </button>
+            <button onclick="switchMode('manual')" id="tabManual" class="flex-1 py-2 px-4 rounded-lg font-bold transition-all text-slate-500 hover:text-indigo-600">
+                ✍️ โหมดพิมพ์เอง
+            </button>
         </div>
 
-        <button onclick="processAudio()" id="btnProcess" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-4 rounded-xl transition-all shadow-md flex justify-center items-center gap-2 text-lg">
-            ✨ เริ่มการสรุปผลด้วย Gemini 2.5
-        </button>
+        <div id="aiSection">
+            <div class="mb-6">
+                <label class="block text-slate-700 font-bold mb-2">เลือกไฟล์เสียงประกาศ (.m4a, .mp3)</label>
+                <input type="file" id="audioFile" accept="audio/*" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 bg-slate-50 text-slate-600">
+            </div>
+            <button onclick="processAudio()" id="btnProcess" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl transition-all shadow-md flex justify-center items-center gap-2 text-lg">
+                🚀 ให้ AI ประมวลผล
+            </button>
+        </div>
 
         <div id="loading" class="hidden mt-6 text-center">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-600 mb-2"></div>
-            <p class="text-blue-600 font-medium">AI กำลังประมวลผลบน Cloud... กรุณารอสักครู่ ⏳</p>
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mb-2"></div>
+            <p class="text-indigo-600 font-medium">กำลังสรุปผล... กรุณารอสักครู่ ⏳</p>
         </div>
 
         <div id="reviewSection" class="hidden mt-8 border-t border-slate-100 pt-6">
-            <label class="block text-slate-700 font-bold mb-2">2. ตรวจทานข้อมูล (สามารถแก้ไขได้)</label>
-            <textarea id="summaryResult" rows="8" class="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-green-500 font-sans text-slate-800 bg-white shadow-inner"></textarea>
+            <label id="reviewLabel" class="block text-slate-700 font-bold mb-2">ตรวจสอบและแก้ไขข้อความ</label>
+            <textarea id="summaryResult" rows="8" class="w-full p-4 border border-slate-300 rounded-xl focus:ring-2 focus:ring-green-500 font-sans text-slate-800 bg-white shadow-inner" placeholder="พิมพ์ข้อความที่ต้องการส่งตรงนี้..."></textarea>
             
             <button onclick="sendToLine()" id="btnSend" class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl transition-all shadow-lg flex justify-center items-center gap-2 text-lg">
                 🚀 ส่งเข้า LINE กลุ่มวิทยาลัย
@@ -48,18 +58,45 @@
     </div>
 
     <script>
-        // ฟังก์ชันประมวลผลเสียง
+        let currentMode = 'ai';
+
+        function switchMode(mode) {
+            currentMode = mode;
+            const tabAI = document.getElementById('tabAI');
+            const tabManual = document.getElementById('tabManual');
+            const aiSection = document.getElementById('aiSection');
+            const reviewSection = document.getElementById('reviewSection');
+            const reviewLabel = document.getElementById('reviewLabel');
+            const summaryResult = document.getElementById('summaryResult');
+
+            if (mode === 'ai') {
+                // UI สำหรับ AI
+                tabAI.classList.add('bg-white', 'shadow', 'text-indigo-600');
+                tabManual.classList.remove('bg-white', 'shadow', 'text-indigo-600');
+                aiSection.classList.remove('hidden');
+                reviewSection.classList.add('hidden'); // ซ่อนก่อน รอ AI สรุป
+                reviewLabel.innerText = "2. ตรวจทานข้อมูลจาก AI";
+            } else {
+                // UI สำหรับพิมพ์เอง
+                tabManual.classList.add('bg-white', 'shadow', 'text-indigo-600');
+                tabAI.classList.remove('bg-white', 'shadow', 'text-indigo-600');
+                aiSection.classList.add('hidden');
+                reviewSection.classList.remove('hidden'); // โชว์กล่องพิมพ์ทันที
+                reviewLabel.innerText = "พิมพ์ข้อความที่ต้องการส่ง";
+                summaryResult.value = ""; // ล้างค่าเก่า
+            }
+        }
+
         async function processAudio() {
             const fileInput = document.getElementById('audioFile');
             const btn = document.getElementById('btnProcess');
             const loading = document.getElementById('loading');
             const reviewSection = document.getElementById('reviewSection');
 
-            if (fileInput.files.length === 0) return alert("กรุณาเลือกไฟล์เสียงก่อนจั๊ฟ!");
+            if (fileInput.files.length === 0) return alert("เลือกไฟล์เสียงก่อนจั๊ฟ!");
 
-            // UI Feedback
             btn.disabled = true;
-            btn.classList.add('opacity-50', 'cursor-not-allowed');
+            btn.classList.add('opacity-50');
             loading.classList.remove('hidden');
             reviewSection.classList.add('hidden');
 
@@ -67,35 +104,30 @@
             formData.append('file', fileInput.files[0]);
 
             try {
-                // เปลี่ยนเป็น Relative Path เพื่อรองรับ Cloud Deployment
-                const response = await fetch('/process', {
-                    method: 'POST',
-                    body: formData
-                });
+                const response = await fetch('/process', { method: 'POST', body: formData });
                 const data = await response.json();
 
                 if (data.success) {
                     document.getElementById('summaryResult').value = data.summary;
                     reviewSection.classList.remove('hidden');
                 } else {
-                    alert("เกิดข้อผิดพลาดจาก AI: " + data.error);
+                    alert("Error: " + data.error);
                 }
             } catch (err) {
-                alert("เชื่อมต่อ Server ไม่ได้! ตรวจสอบว่าระบบบน Render เป็นสถานะ Live หรือยัง?");
+                alert("เชื่อมต่อ Server ไม่ได้!");
             } finally {
                 btn.disabled = false;
-                btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                btn.classList.remove('opacity-50');
                 loading.classList.add('hidden');
             }
         }
 
-        // ฟังก์ชันส่งเข้า LINE
         async function sendToLine() {
             const text = document.getElementById('summaryResult').value;
-            if (!confirm("ยืนยันการส่งข้อมูลสรุปเข้า LINE หรือไม่?")) return;
+            if (!text.trim()) return alert("กรุณาใส่ข้อความก่อนส่งจั๊ฟ!");
+            if (!confirm("ยืนยันการส่งเข้า LINE?")) return;
 
             try {
-                // เปลี่ยนเป็น Relative Path
                 const response = await fetch('/send-line', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -104,13 +136,13 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    alert("✅ ส่งเข้า LINE เรียบร้อยแล้ว!");
-                    location.reload();
+                    alert("✅ ส่งเรียบร้อย!");
+                    if (currentMode === 'ai') location.reload();
                 } else {
-                    alert("❌ ส่งไม่สำเร็จ: " + data.error);
+                    alert("❌ ส่งไม่สำเร็จ");
                 }
             } catch (err) {
-                alert("เกิดปัญหาในการเชื่อมต่อ API");
+                alert("เกิดปัญหาในการส่ง");
             }
         }
     </script>
