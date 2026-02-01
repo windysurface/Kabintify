@@ -7,3 +7,7 @@ __pycache__/
 
 # ไฟล์เก็บความลับอื่นๆ (ถ้ามีในอนาคต)
 .env
+
+# Key & Material
+key.txt
+material

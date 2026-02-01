@@ -35,7 +35,6 @@ def login():
 
 @app.route('/process', methods=['POST'])
 def process_audio():
-    # 🛡️ เช็กสิทธิ์ก่อนทำ (Security Check)
     if not is_authorized(request.headers.get('Authorization')):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
 
@@ -60,13 +59,12 @@ def process_audio():
         file_data = r_upload.json()['file']
         file_uri, file_name = file_data['uri'], file_data['name']
 
-        # 2. รอจนกว่าไฟล์จะพร้อม
         for _ in range(20):
             if requests.get(f"https://generativelanguage.googleapis.com/v1beta/{file_name}?key={API_KEY}").json().get('state') == 'ACTIVE':
                 break
             time.sleep(1)
 
-        # 3. สั่ง Gemini ให้ถอดความและสรุปผล
+        # 3. สั่ง Gemini สรุปเนื้อหา
         gen_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
         payload = {
             "contents": [{
@@ -80,7 +78,6 @@ def process_audio():
         r_gen = requests.post(gen_url, json=payload, timeout=25)
         full_result = r_gen.json()['candidates'][0]['content']['parts'][0]['text']
 
-        # แยกข้อความดิบออกจากบทสรุป
         if "[SUMMARY_START]" in full_result:
             raw_text, summary_text = full_result.split("[SUMMARY_START]")
         else:
@@ -93,16 +90,56 @@ def process_audio():
         if os.path.exists(temp_path): os.remove(temp_path)
         return jsonify({"success": False, "error": str(e)}), 500
 
+# ✅ เปลี่ยนจากข้อความธรรมดาเป็น Flex Message พร้อมปุ่มกด
 @app.route('/send-line', methods=['POST'])
 def send_line():
     if not is_authorized(request.headers.get('Authorization')):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
     
     data = request.json
+    msg_content = data.get('message', '')
     url = "https://api.line.me/v2/bot/message/push"
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {LINE_TOKEN}"}
-    payload = {"to": USER_ID, "messages": [{"type": "text", "text": f"📢 **สรุปโดย Kabintify**\n\n{data.get('message')}"}]}
-    resp = requests.post(url, headers=headers, json=payload)
+
+    # โครงสร้าง Flex Message JSON
+    flex_payload = {
+        "to": USER_ID,
+        "messages": [{
+            "type": "flex",
+            "altText": "📢 มีประกาศใหม่จาก Kabintify Admin",
+            "contents": {
+                "type": "bubble",
+                "header": {
+                    "type": "box", "layout": "vertical",
+                    "contents": [{"type": "text", "text": "🎙️ KABINTIFY ADMIN", "weight": "bold", "color": "#4f46e5", "size": "sm"}]
+                },
+                "body": {
+                    "type": "box", "layout": "vertical",
+                    "contents": [
+                        {"type": "text", "text": "สรุปใจความสำคัญ", "weight": "bold", "size": "xl", "margin": "md"},
+                        {"type": "separator", "margin": "lg"},
+                        {"type": "text", "text": msg_content, "wrap": True, "margin": "lg", "size": "sm", "color": "#334155"}
+                    ]
+                },
+                "footer": {
+                    "type": "box", "layout": "vertical", "spacing": "sm",
+                    "contents": [
+                        {
+                            "type": "button", "style": "primary", "color": "#4f46e5",
+                            "action": {"type": "uri", "label": "🌐 ดูประกาศบนเว็บไซต์", "uri": "https://kabintify.site"}
+                        },
+                        {
+                            "type": "button", "style": "secondary",
+                            "action": {"type": "uri", "label": "📞 ติดต่อสอบถาม", "uri": "tel:037213123"}
+                        },
+                        {"type": "text", "text": "วิทยาลัยการอาชีพกบินทร์บุรี", "size": "xs", "color": "#94a3b8", "align": "center", "margin": "md"}
+                    ]
+                }
+            }
+        }]
+    }
+    
+    resp = requests.post(url, headers=headers, json=flex_payload)
     return jsonify({"success": resp.status_code == 200})
 
 if __name__ == '__main__':
