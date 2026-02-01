@@ -1,69 +1,89 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kabintify Admin Console</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kabintify Admin Console - Maximum Security</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&family=Fira+Code:wght@400&display=swap" rel="stylesheet">
-    <style> body { font-family: 'Sarabun', sans-serif; } .log-font { font-family: 'Fira Code', monospace; } </style>
+    <style> 
+        body { font-family: 'Sarabun', sans-serif; } 
+        .log-font { font-family: 'Fira Code', monospace; }
+    </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
 
     <div id="loginOverlay" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md text-center border">
-            <h2 class="text-2xl font-bold mb-6">🔐 Admin Login</h2>
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 text-center">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6">🔐 Admin Login</h2>
             <div class="space-y-4">
-                <input type="text" id="userInput" placeholder="Username" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
-                <input type="password" id="passInput" placeholder="Password" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="text" id="userInput" placeholder="Username" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="password" id="passInput" placeholder="Password" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
                 <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">เข้าสู่ระบบ</button>
             </div>
         </div>
     </div>
 
-    <div id="mainContent" class="hidden bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl border relative">
+    <div id="mainContent" class="hidden bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl border border-slate-200 relative">
         <div class="absolute top-4 right-8 flex gap-4">
-            <button onclick="logout()" class="text-red-500 text-sm font-bold">🚪 ออกจากระบบ</button>
-            <a href="https://kabintify.site" class="text-indigo-600 text-sm font-bold flex items-center gap-1">🏠 กลับหน้าหลัก</a>
+            <button onclick="logout()" class="text-red-500 hover:text-red-700 text-sm font-bold transition-colors">🚪 ออกจากระบบ</button>
+            <a href="https://kabintify.site" class="text-indigo-600 hover:text-indigo-800 text-sm font-bold flex items-center gap-1">🏠 กลับเว็บไซต์หลัก</a>
         </div>
 
         <div class="flex items-center gap-4 mb-8 mt-2">
             <div class="bg-indigo-600 text-white p-3 rounded-xl shadow-lg">🎙️</div>
-            <div><h1 class="text-2xl font-bold">Kabintify Admin</h1><p class="text-slate-500 text-sm">วิทยาลัยการอาชีพกบินทร์บุรี</p></div>
+            <div>
+                <h1 class="text-2xl font-bold text-slate-800">Kabintify Admin</h1>
+                <p class="text-slate-500 text-sm">วิทยาลัยการอาชีพกบินทร์บุรี</p>
+            </div>
         </div>
 
         <div class="flex bg-slate-100 p-1 rounded-xl mb-6">
-            <button onclick="switchMode('ai')" id="tabAI" class="flex-1 py-2 rounded-lg font-bold bg-white shadow text-indigo-600">✨ AI สรุปผล</button>
-            <button onclick="switchMode('manual')" id="tabManual" class="flex-1 py-2 rounded-lg font-bold text-slate-500">✍️ พิมพ์เอง</button>
+            <button onclick="switchMode('ai')" id="tabAI" class="flex-1 py-2 px-4 rounded-lg font-bold transition-all bg-white shadow text-indigo-600">✨ AI สรุปผล</button>
+            <button onclick="switchMode('manual')" id="tabManual" class="flex-1 py-2 px-4 rounded-lg font-bold transition-all text-slate-500">✍️ พิมพ์เอง</button>
         </div>
 
         <div id="aiSection">
-            <input type="file" id="audioFile" accept="audio/*" class="w-full p-3 border rounded-xl mb-6 bg-slate-50">
-            <button onclick="processAudio()" id="btnProcess" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-md">🚀 เริ่มประมวลผล</button>
+            <label class="block text-slate-700 font-bold mb-2">เลือกไฟล์เสียงประกาศ (.m4a, .mp3)</label>
+            <input type="file" id="audioFile" accept="audio/*" class="w-full p-3 border border-slate-300 rounded-xl mb-4 bg-slate-50">
+            
+            <div id="uploadProgress" class="hidden mb-4">
+                <div class="w-full bg-slate-200 rounded-full h-2">
+                    <div id="progressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
+                </div>
+                <p id="progressText" class="text-right text-[10px] text-slate-500 mt-1 log-font">0%</p>
+            </div>
+
+            <button onclick="processAudio()" id="btnProcess" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-md transition-all">🚀 ประมวลผลด้วย Gemini</button>
         </div>
 
-        <div id="logContainer" class="hidden mt-6 bg-slate-900 text-green-400 p-4 rounded-xl log-font text-xs overflow-y-auto max-h-32">
+        <div id="logContainer" class="hidden mt-6 bg-slate-900 text-green-400 p-4 rounded-xl shadow-inner log-font text-xs overflow-y-auto max-h-32">
             <div id="statusLogs"></div>
         </div>
 
-        <div id="reviewSection" class="hidden mt-8 border-t pt-6">
+        <div id="loading" class="hidden mt-6 text-center text-indigo-600 font-bold animate-pulse">กำลังสรุปผล... ⏳</div>
+
+        <div id="reviewSection" class="hidden mt-8 border-t border-slate-100 pt-6">
             <div class="flex justify-between items-center mb-2">
-                <label id="reviewLabel" class="font-bold">ตรวจสอบข้อมูล</label>
-                <button onclick="toggleRaw()" class="text-indigo-500 text-xs font-bold border border-indigo-200 px-2 py-1 rounded-lg">🔍 ดูข้อความดิบ</button>
+                <label id="reviewLabel" class="block text-slate-700 font-bold">ตรวจสอบข้อมูล</label>
+                <button id="rawBtn" onclick="toggleRaw()" class="hidden text-indigo-500 hover:text-indigo-700 text-xs font-bold border border-indigo-200 px-2 py-1 rounded-lg">🔍 ดูข้อความดิบ</button>
             </div>
-            <textarea id="summaryResult" rows="8" class="w-full p-4 border rounded-xl shadow-inner focus:ring-2 focus:ring-green-500 mb-4"></textarea>
             
-            <div id="rawBox" class="hidden mb-4 p-4 bg-slate-50 border rounded-xl text-sm italic">
-                <p class="font-bold text-slate-400 mb-1 border-b">ข้อความถอดเสียง:</p>
+            <textarea id="summaryResult" rows="8" class="w-full p-4 border border-slate-300 rounded-xl shadow-inner focus:ring-2 focus:ring-green-500 outline-none mb-4" placeholder="พิมพ์ข้อความที่นี่..."></textarea>
+            
+            <div id="rawBox" class="hidden mb-4 p-4 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-600 italic">
+                <p class="font-bold text-slate-400 mb-1 border-b pb-1">ถอดเสียงต้นฉบับ:</p>
                 <div id="rawDisplay"></div>
             </div>
 
-            <button onclick="sendToLine()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg">🚀 ส่งเข้า LINE</button>
+            <button onclick="sendToLine()" class="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all">🚀 ส่งเข้า LINE กลุ่มวิทยาลัย</button>
         </div>
     </div>
 
     <script>
         let currentMode = 'ai';
-        window.onload = () => {
+
+        window.onload = function() {
             if (localStorage.getItem('isKabinLoggedIn') === 'true') {
                 document.getElementById('loginOverlay').classList.add('hidden');
                 document.getElementById('mainContent').classList.remove('hidden');
@@ -71,57 +91,113 @@
         };
 
         function addLog(msg) {
-            const l = document.getElementById('statusLogs');
-            l.innerHTML += `<div><span class="text-slate-500">[${new Date().toLocaleTimeString()}]</span> ${msg}</div>`;
+            const logDiv = document.getElementById('statusLogs');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div><span class="text-slate-500">[${time}]</span> ${msg}</div>`;
             document.getElementById('logContainer').classList.remove('hidden');
-            document.getElementById('logContainer').scrollTop = l.scrollHeight;
-        }
-
-        async function handleLogin() {
-            const u = document.getElementById('userInput').value, p = document.getElementById('passInput').value;
-            const resp = await fetch('/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
-            if ((await resp.json()).success) { localStorage.setItem('isKabinLoggedIn', 'true'); localStorage.setItem('kabinKey', p); location.reload(); }
-            else alert("ล็อกอินไม่สำเร็จจั๊ฟ!");
-        }
-
-        async function processAudio() {
-            const f = document.getElementById('audioFile').files[0];
-            if (!f) return alert("เลือกไฟล์ก่อนครับ!");
-            document.getElementById('statusLogs').innerHTML = "";
-            addLog("📁 อัปโหลดไฟล์: " + f.name);
-            const formData = new FormData(); formData.append('file', f);
-            try {
-                const resp = await fetch('/process', { method: 'POST', headers: { 'Authorization': 'Bearer ' + localStorage.getItem('kabinKey') }, body: formData });
-                addLog("☁️ Server รับไฟล์แล้ว กำลังรอ AI แกะเสียง...");
-                const data = await resp.json();
-                if (data.success) {
-                    addLog("✅ AI ทำงานสำเร็จ!");
-                    document.getElementById('summaryResult').value = data.summary;
-                    document.getElementById('rawDisplay').innerText = data.raw;
-                    document.getElementById('reviewSection').classList.remove('hidden');
-                } else alert(data.error);
-            } catch (err) { addLog("❌ เชื่อมต่อล้มเหลว"); }
+            document.getElementById('logContainer').scrollTop = logDiv.scrollHeight;
         }
 
         function switchMode(mode) {
             currentMode = mode;
             const tabAI = document.getElementById('tabAI'), tabManual = document.getElementById('tabManual');
-            const aiSec = document.getElementById('aiSection'), revSec = document.getElementById('reviewSection'), label = document.getElementById('reviewLabel');
+            const aiSection = document.getElementById('aiSection'), reviewSection = document.getElementById('reviewSection');
+            const reviewLabel = document.getElementById('reviewLabel'), rawBtn = document.getElementById('rawBtn');
+
             if (mode === 'ai') {
-                tabAI.classList.add('bg-white', 'shadow', 'text-indigo-600'); tabManual.classList.remove('bg-white', 'shadow', 'text-indigo-600');
-                aiSec.classList.remove('hidden'); revSec.classList.add('hidden'); label.innerText = "ผลการสรุปข้อมูล";
+                tabAI.classList.add('bg-white', 'shadow', 'text-indigo-600');
+                tabManual.classList.remove('bg-white', 'shadow', 'text-indigo-600');
+                aiSection.classList.remove('hidden');
+                reviewSection.classList.add('hidden');
+                reviewLabel.innerText = "2. ตรวจทานข้อมูลจาก AI";
             } else {
-                tabManual.classList.add('bg-white', 'shadow', 'text-indigo-600'); tabAI.classList.remove('bg-white', 'shadow', 'text-indigo-600');
-                aiSec.classList.add('hidden'); revSec.classList.remove('hidden'); label.innerText = "พิมพ์ข้อความที่ต้องการส่ง";
+                tabManual.classList.add('bg-white', 'shadow', 'text-indigo-600');
+                tabAI.classList.remove('bg-white', 'shadow', 'text-indigo-600');
+                aiSection.classList.add('hidden');
+                reviewSection.classList.remove('hidden');
+                reviewLabel.innerText = "พิมพ์ข้อความที่ต้องการส่ง";
                 document.getElementById('summaryResult').value = "";
+                rawBtn.classList.add('hidden'); // ✅ ซ่อนปุ่ม Raw ทันทีในโหมดพิมพ์เอง
+                document.getElementById('rawBox').classList.add('hidden');
             }
         }
 
+        async function processAudio() {
+            const fileInput = document.getElementById('audioFile');
+            if (fileInput.files.length === 0) return alert("เลือกไฟล์ก่อนครับ");
+
+            document.getElementById('statusLogs').innerHTML = "";
+            document.getElementById('uploadProgress').classList.remove('hidden');
+            addLog("📁 เริ่มอัปโหลดไฟล์: " + fileInput.files[0].name);
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            
+            // ✅ ใช้ XMLHttpRequest เพื่อดึงเปอร์เซ็นต์การอัปโหลด
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/process', true);
+            xhr.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('kabinKey'));
+
+            xhr.upload.onprogress = (e) => {
+                if (e.lengthComputable) {
+                    const percent = Math.round((e.loaded / e.total) * 100);
+                    document.getElementById('progressBar').style.width = percent + '%';
+                    document.getElementById('progressText').innerText = percent + '%';
+                    if (percent % 25 === 0) addLog(`📤 กำลังส่งไฟล์... ${percent}%`);
+                }
+            };
+
+            xhr.onload = function() {
+                document.getElementById('loading').classList.add('hidden');
+                document.getElementById('uploadProgress').classList.add('hidden');
+                
+                if (xhr.status === 200) {
+                    const data = JSON.parse(xhr.responseText);
+                    addLog("✅ AI ทำงานสำเร็จ! พร้อมสรุปข้อมูล");
+                    document.getElementById('summaryResult').value = data.summary;
+                    document.getElementById('rawDisplay').innerText = data.raw;
+                    document.getElementById('reviewSection').classList.remove('hidden');
+                    if (currentMode === 'ai') document.getElementById('rawBtn').classList.remove('hidden');
+                } else {
+                    addLog("❌ Error: " + xhr.statusText);
+                    alert("เกิดข้อผิดพลาดในการประมวลผล");
+                }
+            };
+
+            addLog("🚀 กำลังส่งข้อมูลไปยัง Server...");
+            document.getElementById('loading').classList.remove('hidden');
+            xhr.send(formData);
+        }
+
+        async function handleLogin() {
+            const u = document.getElementById('userInput').value;
+            const p = document.getElementById('passInput').value;
+            const resp = await fetch('/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: u, password: p })
+            });
+            const data = await resp.json();
+            if (data.success) {
+                localStorage.setItem('isKabinLoggedIn', 'true');
+                localStorage.setItem('kabinKey', p);
+                location.reload();
+            } else alert("รหัสผ่านไม่ถูกต้อง");
+        }
+
         async function sendToLine() {
-            const msg = document.getElementById('summaryResult').value;
-            if (!msg.trim()) return alert("พิมพ์ข้อความก่อนจั๊ฟ!");
-            const resp = await fetch('/send-line', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('kabinKey') }, body: JSON.stringify({ message: msg }) });
-            if ((await resp.json()).success) alert("🚀 ส่ง LINE เรียบร้อย!");
+            const text = document.getElementById('summaryResult').value;
+            if (!text.trim()) return alert("ใส่ข้อความก่อนส่งครับ");
+            const resp = await fetch('/send-line', {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + localStorage.getItem('kabinKey')
+                },
+                body: JSON.stringify({ message: text })
+            });
+            const data = await resp.json();
+            if (data.success) alert("✅ ส่งเรียบร้อย!");
         }
 
         function toggleRaw() { document.getElementById('rawBox').classList.toggle('hidden'); }
