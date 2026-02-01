@@ -59,12 +59,13 @@ def process_audio():
         file_data = r_upload.json()['file']
         file_uri, file_name = file_data['uri'], file_data['name']
 
-        for _ in range(20):
-            if requests.get(f"https://generativelanguage.googleapis.com/v1beta/{file_name}?key={API_KEY}").json().get('state') == 'ACTIVE':
-                break
-            time.sleep(1)
+        # 2. รอจนกว่าไฟล์จะพร้อม (ปรับ Polling เป็น 0.5s เพื่อกัน Timeout 30 วิ)
+        for _ in range(30):
+            state = requests.get(f"https://generativelanguage.googleapis.com/v1beta/{file_name}?key={API_KEY}").json().get('state')
+            if state == 'ACTIVE': break
+            time.sleep(0.5)
 
-        # 3. สั่ง Gemini สรุปเนื้อหา
+        # 3. สั่ง Gemini ให้ถอดความและสรุปผล (ใช้ตัวแยก [SUMMARY_START] ตามเดิม)
         gen_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
         payload = {
             "contents": [{
@@ -75,9 +76,10 @@ def process_audio():
             }]
         }
         
-        r_gen = requests.post(gen_url, json=payload, timeout=25)
+        r_gen = requests.post(gen_url, json=payload, timeout=20)
         full_result = r_gen.json()['candidates'][0]['content']['parts'][0]['text']
 
+        # แยกข้อความดิบออกจากบทสรุปตามโค้ดต้นฉบับของคุณ
         if "[SUMMARY_START]" in full_result:
             raw_text, summary_text = full_result.split("[SUMMARY_START]")
         else:
@@ -88,9 +90,9 @@ def process_audio():
         return jsonify({"success": True, "summary": summary_text.strip(), "raw": raw_text.strip()})
     except Exception as e:
         if os.path.exists(temp_path): os.remove(temp_path)
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({"success": False, "error": "AI ประมวลผลนานเกินไป หรือเกิดข้อผิดพลาด"}), 500
 
-# ✅ เปลี่ยนจากข้อความธรรมดาเป็น Flex Message พร้อมปุ่มกด
+# ✅ ส่ง Flex Message แบบมีปุ่มเดียว (ดูประกาศบนเว็บไซต์)
 @app.route('/send-line', methods=['POST'])
 def send_line():
     if not is_authorized(request.headers.get('Authorization')):
@@ -101,7 +103,6 @@ def send_line():
     url = "https://api.line.me/v2/bot/message/push"
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {LINE_TOKEN}"}
 
-    # โครงสร้าง Flex Message JSON
     flex_payload = {
         "to": USER_ID,
         "messages": [{
