@@ -11,22 +11,20 @@
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
 
     <div id="loginOverlay" class="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200">
-            <h2 class="text-2xl font-bold text-slate-800 mb-6 text-center">🔐 Admin Login</h2>
+        <div class="bg-white p-8 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 text-center">
+            <h2 class="text-2xl font-bold text-slate-800 mb-6">🔐 Admin Login</h2>
             <div class="space-y-4">
-                <input type="text" id="userInput" placeholder="Username" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
-                <input type="password" id="passInput" placeholder="Password" class="w-full p-3 border border-slate-300 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
-                <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md">เข้าสู่ระบบ</button>
+                <input type="text" id="userInput" placeholder="Username" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                <input type="password" id="passInput" placeholder="Password" class="w-full p-3 border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-indigo-500">
+                <button onclick="handleLogin()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-md transition-all">เข้าสู่ระบบ</button>
             </div>
         </div>
     </div>
 
     <div id="mainContent" class="hidden bg-white p-8 rounded-2xl shadow-xl w-full max-w-2xl border border-slate-200 relative">
         <div class="absolute top-4 right-8 flex gap-4">
-            <button onclick="logout()" class="text-red-500 hover:text-red-700 text-sm font-bold">🚪 ออกจากระบบ</button>
-            <a href="https://kabintify.site" class="text-indigo-600 hover:text-indigo-800 text-sm font-bold flex items-center gap-1">
-                🏠 กลับเว็บไซต์หลัก
-            </a>
+            <button onclick="logout()" class="text-red-500 hover:text-red-700 text-sm font-bold transition-colors">🚪 ออกจากระบบ</button>
+            <a href="https://kabintify.site" class="text-indigo-600 hover:text-indigo-800 text-sm font-bold flex items-center gap-1">🏠 กลับเว็บไซต์หลัก</a>
         </div>
 
         <div class="flex items-center gap-4 mb-8 mt-2">
@@ -43,27 +41,55 @@
         </div>
 
         <div id="aiSection">
-            <input type="file" id="audioFile" accept="audio/*" class="w-full p-3 border rounded-xl mb-6">
-            <button onclick="processAudio()" id="btnProcess" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-md">🚀 ประมวลผลด้วย Gemini</button>
+            <label class="block text-slate-700 font-bold mb-2">เลือกไฟล์เสียงประกาศ (.m4a, .mp3)</label>
+            <input type="file" id="audioFile" accept="audio/*" class="w-full p-3 border border-slate-300 rounded-xl mb-6 bg-slate-50">
+            <button onclick="processAudio()" id="btnProcess" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-md transition-all">🚀 ประมวลผลด้วย Gemini</button>
         </div>
 
-        <div id="loading" class="hidden mt-6 text-center text-indigo-600">ประมวลผลอยู่... ⏳</div>
+        <div id="loading" class="hidden mt-6 text-center text-indigo-600 font-bold animate-pulse">กำลังสรุปผล... ⏳</div>
 
-        <div id="reviewSection" class="hidden mt-8 border-t pt-6">
-            <label id="reviewLabel" class="block text-slate-700 font-bold mb-2">ตรวจทานข้อมูล</label>
-            <textarea id="summaryResult" rows="8" class="w-full p-4 border rounded-xl shadow-inner"></textarea>
-            <button onclick="sendToLine()" class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg">🚀 ส่งเข้า LINE กลุ่มวิทยาลัย</button>
+        <div id="reviewSection" class="hidden mt-8 border-t border-slate-100 pt-6">
+            <label id="reviewLabel" class="block text-slate-700 font-bold mb-2">ตรวจสอบข้อมูล</label>
+            <textarea id="summaryResult" rows="8" class="w-full p-4 border border-slate-300 rounded-xl shadow-inner focus:ring-2 focus:ring-green-500 outline-none" placeholder="พิมพ์ข้อความที่นี่..."></textarea>
+            <button onclick="sendToLine()" class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl shadow-lg transition-all">🚀 ส่งเข้า LINE กลุ่มวิทยาลัย</button>
         </div>
     </div>
 
     <script>
-        // ✅ ตรวจสอบ Login
+        let currentMode = 'ai';
+
         window.onload = function() {
             if (localStorage.getItem('isKabinLoggedIn') === 'true') {
                 document.getElementById('loginOverlay').classList.add('hidden');
                 document.getElementById('mainContent').classList.remove('hidden');
             }
         };
+
+        // ✅ ฟังก์ชันสลับโหมด (แก้ไขให้กลับมาทำงานได้)
+        function switchMode(mode) {
+            currentMode = mode;
+            const tabAI = document.getElementById('tabAI');
+            const tabManual = document.getElementById('tabManual');
+            const aiSection = document.getElementById('aiSection');
+            const reviewSection = document.getElementById('reviewSection');
+            const reviewLabel = document.getElementById('reviewLabel');
+            const summaryResult = document.getElementById('summaryResult');
+
+            if (mode === 'ai') {
+                tabAI.classList.add('bg-white', 'shadow', 'text-indigo-600');
+                tabManual.classList.remove('bg-white', 'shadow', 'text-indigo-600');
+                aiSection.classList.remove('hidden');
+                reviewSection.classList.add('hidden');
+                reviewLabel.innerText = "2. ตรวจทานข้อมูลจาก AI";
+            } else {
+                tabManual.classList.add('bg-white', 'shadow', 'text-indigo-600');
+                tabAI.classList.remove('bg-white', 'shadow', 'text-indigo-600');
+                aiSection.classList.add('hidden');
+                reviewSection.classList.remove('hidden');
+                reviewLabel.innerText = "พิมพ์ข้อความที่ต้องการส่ง";
+                summaryResult.value = "";
+            }
+        }
 
         async function handleLogin() {
             const u = document.getElementById('userInput').value;
@@ -73,24 +99,27 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ username: u, password: p })
             });
-            if ((await resp.json()).success) {
+            const data = await resp.json();
+            if (data.success) {
                 localStorage.setItem('isKabinLoggedIn', 'true');
-                localStorage.setItem('kabinKey', p); // 🔑 เก็บกุญแจไว้ส่ง API
+                localStorage.setItem('kabinKey', p);
                 location.reload();
             } else alert("รหัสผ่านไม่ถูกต้อง");
         }
 
         function logout() { localStorage.clear(); location.reload(); }
 
-        // ✅ ฟังก์ชันเรียก API พร้อมแนบกุญแจ
         async function processAudio() {
+            const fileInput = document.getElementById('audioFile');
+            if (fileInput.files.length === 0) return alert("เลือกไฟล์ก่อนครับ");
+
             const formData = new FormData();
-            formData.append('file', document.getElementById('audioFile').files[0]);
+            formData.append('file', fileInput.files[0]);
             
             document.getElementById('loading').classList.remove('hidden');
             const resp = await fetch('/process', {
                 method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('kabinKey') }, // 🔑 แนบกุญแจ
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('kabinKey') },
                 body: formData
             });
             const data = await resp.json();
@@ -102,18 +131,19 @@
         }
 
         async function sendToLine() {
+            const text = document.getElementById('summaryResult').value;
+            if (!text.trim()) return alert("ใส่ข้อความก่อนส่งครับ");
             const resp = await fetch('/send-line', {
                 method: 'POST',
                 headers: { 
                     'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + localStorage.getItem('kabinKey') // 🔑 แนบกุญแจ
+                    'Authorization': 'Bearer ' + localStorage.getItem('kabinKey')
                 },
-                body: JSON.stringify({ message: document.getElementById('summaryResult').value })
+                body: JSON.stringify({ message: text })
             });
-            if ((await resp.json()).success) alert("✅ ส่งเรียบร้อย!");
+            const data = await resp.json();
+            if (data.success) alert("✅ ส่งเรียบร้อย!");
         }
-
-        function switchMode(mode) { /* โค้ดสลับ Tab เดิม */ }
     </script>
 </body>
 </html>
