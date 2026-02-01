@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kabintify Admin Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700&display=swap" rel="stylesheet">
+    <style> body { font-family: 'Sarabun', sans-serif; } </style>
+</head>
+<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-8 rounded-xl shadow-2xl w-full max-w-2xl border border-gray-200">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="bg-indigo-600 text-white p-3 rounded-lg">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+            </div>
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">ระบบสรุปเสียงประชาสัมพันธ์</h1>
+                <p class="text-gray-500 text-sm">อัปโหลดเสียง > AI สรุป > ตรวจทาน > ส่ง LINE</p>
+            </div>
+        </div>
+
+        <div class="mb-6">
+            <label class="block text-gray-700 font-bold mb-2">1. เลือกไฟล์เสียง (.mp3, .m4a)</label>
+            <input type="file" id="audioFile" accept="audio/*" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 bg-gray-50">
+        </div>
+
+        <button onclick="processAudio()" id="btnProcess" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-all flex justify-center items-center gap-2">
+            ✨ ให้ AI แกะและสรุปข้อมูล
+        </button>
+
+        <div id="loading" class="hidden mt-4 text-center text-indigo-600 animate-pulse">
+            กำลังฟังเสียงและสรุปใจความ... กรุณารอสักครู่ ⏳
+        </div>
+
+        <div id="reviewSection" class="hidden mt-8 border-t pt-6">
+            <label class="block text-gray-700 font-bold mb-2">2. ตรวจสอบและแก้ไขข้อความ</label>
+            <textarea id="summaryResult" rows="6" class="w-full p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 font-mono text-sm bg-gray-50 text-gray-800"></textarea>
+            
+            <button onclick="sendToLine()" id="btnSend" class="w-full mt-4 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-lg transition-all shadow-lg flex justify-center items-center gap-2">
+                🚀 ยืนยันและส่งเข้า LINE ทันที
+            </button>
+        </div>
+    </div>
+
+    <script>
+        async function processAudio() {
+            const fileInput = document.getElementById('audioFile');
+            const btn = document.getElementById('btnProcess');
+            const loading = document.getElementById('loading');
+            const reviewSection = document.getElementById('reviewSection');
+
+            if (fileInput.files.length === 0) return alert("กรุณาเลือกไฟล์เสียงก่อนครับ!");
+
+            // UI Changes
+            btn.disabled = true;
+            btn.classList.add('opacity-50');
+            loading.classList.remove('hidden');
+            reviewSection.classList.add('hidden');
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            try {
+                // เรียก Backend ให้ AI ทำงาน
+                const response = await fetch('http://localhost:5000/process', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('summaryResult').value = data.summary;
+                    reviewSection.classList.remove('hidden'); // โชว์กล่องให้แก้
+                } else {
+                    alert("เกิดข้อผิดพลาด: " + data.error);
+                }
+            } catch (err) {
+                alert("เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจดูว่ารัน python app.py หรือยัง?");
+            } finally {
+                btn.disabled = false;
+                btn.classList.remove('opacity-50');
+                loading.classList.add('hidden');
+            }
+        }
+
+        async function sendToLine() {
+            const text = document.getElementById('summaryResult').value;
+            if (!confirm("ยืนยันที่จะส่งข้อความนี้เข้า LINE?")) return;
+
+            try {
+                const response = await fetch('http://localhost:5000/send-line', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message: text })
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    alert("✅ ส่งเรียบร้อยแล้ว!");
+                    location.reload();
+                } else {
+                    alert("❌ ส่งไม่ผ่าน: " + data.error);
+                }
+            } catch (err) {
+                alert("Error sending to LINE");
+            }
+        }
+    </script>
+</body>
+</html>
