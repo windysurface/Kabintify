@@ -16,6 +16,7 @@ ADMIN_PASS = os.getenv("ADMIN_PASS")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
+# ✅ ตรวจสอบกุญแจในทุก Request
 def is_authorized(auth_header):
     if not auth_header: return False
     return auth_header == f"Bearer {ADMIN_PASS}"
@@ -34,6 +35,7 @@ def login():
 
 @app.route('/process', methods=['POST'])
 def process_audio():
+    # 🛡️ เช็กสิทธิ์ก่อนทำ (Security Check)
     if not is_authorized(request.headers.get('Authorization')):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
 
@@ -45,7 +47,7 @@ def process_audio():
     audio_file.save(temp_path)
 
     try:
-        # 1. อัปโหลดไฟล์ไปยัง Gemini API
+        # 1. อัปโหลดไปยัง Google Cloud
         upload_url = f"https://generativelanguage.googleapis.com/upload/v1beta/files?key={API_KEY}"
         with open(temp_path, 'rb') as f:
             headers = {"X-Goog-Upload-Protocol": "multipart"}
@@ -58,13 +60,13 @@ def process_audio():
         file_data = r_upload.json()['file']
         file_uri, file_name = file_data['uri'], file_data['name']
 
-        # 2. รอจนกว่าสถานะจะเป็น ACTIVE
+        # 2. รอจนกว่าไฟล์จะพร้อม
         for _ in range(20):
             if requests.get(f"https://generativelanguage.googleapis.com/v1beta/{file_name}?key={API_KEY}").json().get('state') == 'ACTIVE':
                 break
             time.sleep(1)
 
-        # 3. สั่งให้ถอดความและสรุปผลแยกส่วนกัน
+        # 3. สั่ง Gemini ให้ถอดความและสรุปผล
         gen_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={API_KEY}"
         payload = {
             "contents": [{
@@ -86,11 +88,7 @@ def process_audio():
             summary_text = full_result
 
         if os.path.exists(temp_path): os.remove(temp_path)
-        return jsonify({
-            "success": True, 
-            "summary": summary_text.strip(), 
-            "raw": raw_text.strip()
-        })
+        return jsonify({"success": True, "summary": summary_text.strip(), "raw": raw_text.strip()})
     except Exception as e:
         if os.path.exists(temp_path): os.remove(temp_path)
         return jsonify({"success": False, "error": str(e)}), 500
@@ -99,11 +97,11 @@ def process_audio():
 def send_line():
     if not is_authorized(request.headers.get('Authorization')):
         return jsonify({"success": False, "error": "Unauthorized"}), 401
-
+    
     data = request.json
     url = "https://api.line.me/v2/bot/message/push"
     headers = {"Content-Type": "application/json", "Authorization": f"Bearer {LINE_TOKEN}"}
-    payload = {"to": USER_ID, "messages": [{"type": "text", "text": f"📢 **สรุปจากวิทยาลัย (Cloud)**\n\n{data.get('message')}"}]}
+    payload = {"to": USER_ID, "messages": [{"type": "text", "text": f"📢 **สรุปโดย Kabintify**\n\n{data.get('message')}"}]}
     resp = requests.post(url, headers=headers, json=payload)
     return jsonify({"success": resp.status_code == 200})
 
