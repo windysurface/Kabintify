@@ -9,6 +9,8 @@
     <style> 
         body { font-family: 'Sarabun', sans-serif; } 
         .log-font { font-family: 'Fira Code', monospace; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .spinner { animation: spin 1s linear infinite; }
     </style>
 </head>
 <body class="bg-slate-100 min-h-screen flex items-center justify-center p-4">
@@ -51,7 +53,10 @@
                 <div class="w-full bg-slate-200 rounded-full h-2">
                     <div id="progressBar" class="bg-indigo-600 h-2 rounded-full transition-all duration-300" style="width: 0%"></div>
                 </div>
-                <p id="progressText" class="text-right text-[10px] text-slate-500 mt-1 log-font">0%</p>
+                <div class="flex justify-between mt-1">
+                    <span id="progressLabel" class="text-[10px] text-indigo-600 font-bold log-font">UPLOADING...</span>
+                    <span id="progressText" class="text-[10px] text-slate-500 log-font">0%</span>
+                </div>
             </div>
 
             <button onclick="processAudio()" id="btnProcess" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 rounded-xl shadow-md transition-all">🚀 ประมวลผลด้วย Gemini</button>
@@ -61,7 +66,15 @@
             <div id="statusLogs"></div>
         </div>
 
-        <div id="loading" class="hidden mt-6 text-center text-indigo-600 font-bold animate-pulse">กำลังสรุปผล... ⏳</div>
+        <div id="loading" class="hidden mt-6 text-center">
+            <div class="flex items-center justify-center gap-2 text-indigo-600 font-bold">
+                <svg class="spinner h-5 w-5 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="animate-pulse">กำลังสรุปผลด้วย Gemini... ⏳</span>
+            </div>
+        </div>
 
         <div id="reviewSection" class="hidden mt-8 border-t border-slate-100 pt-6">
             <div class="flex justify-between items-center mb-2">
@@ -98,26 +111,23 @@
             document.getElementById('logContainer').scrollTop = logDiv.scrollHeight;
         }
 
+        // ✅ แก้ไขระบบสลับโหมด
         function switchMode(mode) {
             currentMode = mode;
             const tabAI = document.getElementById('tabAI'), tabManual = document.getElementById('tabManual');
-            const aiSection = document.getElementById('aiSection'), reviewSection = document.getElementById('reviewSection');
-            const reviewLabel = document.getElementById('reviewLabel'), rawBtn = document.getElementById('rawBtn');
+            const aiSec = document.getElementById('aiSection'), revSec = document.getElementById('reviewSection');
+            const label = document.getElementById('reviewLabel'), rawBtn = document.getElementById('rawBtn');
 
             if (mode === 'ai') {
-                tabAI.classList.add('bg-white', 'shadow', 'text-indigo-600');
-                tabManual.classList.remove('bg-white', 'shadow', 'text-indigo-600');
-                aiSection.classList.remove('hidden');
-                reviewSection.classList.add('hidden');
-                reviewLabel.innerText = "2. ตรวจทานข้อมูลจาก AI";
+                tabAI.classList.add('bg-white', 'shadow', 'text-indigo-600'); tabManual.classList.remove('bg-white', 'shadow', 'text-indigo-600');
+                aiSec.classList.remove('hidden'); revSec.classList.add('hidden'); 
+                label.innerText = "ผลการสรุปข้อมูล";
             } else {
-                tabManual.classList.add('bg-white', 'shadow', 'text-indigo-600');
-                tabAI.classList.remove('bg-white', 'shadow', 'text-indigo-600');
-                aiSection.classList.add('hidden');
-                reviewSection.classList.remove('hidden');
-                reviewLabel.innerText = "พิมพ์ข้อความที่ต้องการส่ง";
+                tabManual.classList.add('bg-white', 'shadow', 'text-indigo-600'); tabAI.classList.remove('bg-white', 'shadow', 'text-indigo-600');
+                aiSec.classList.add('hidden'); revSec.classList.remove('hidden'); 
+                label.innerText = "พิมพ์ข้อความที่ต้องการส่ง";
                 document.getElementById('summaryResult').value = "";
-                rawBtn.classList.add('hidden'); // ✅ ซ่อนปุ่ม Raw ทันทีในโหมดพิมพ์เอง
+                rawBtn.classList.add('hidden'); // ✅ ปิดปุ่มดูข้อความดิบทันทีในโหมดพิมพ์เอง
                 document.getElementById('rawBox').classList.add('hidden');
             }
         }
@@ -128,39 +138,49 @@
 
             document.getElementById('statusLogs').innerHTML = "";
             document.getElementById('uploadProgress').classList.remove('hidden');
+            document.getElementById('progressBar').style.width = '0%';
             addLog("📁 เริ่มอัปโหลดไฟล์: " + fileInput.files[0].name);
 
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
             
-            // ✅ ใช้ XMLHttpRequest เพื่อดึงเปอร์เซ็นต์การอัปโหลด
             const xhr = new XMLHttpRequest();
             xhr.open('POST', '/process', true);
             xhr.setRequestHeader('Authorization', 'Bearer ' + localStorage.getItem('kabinKey'));
 
             xhr.upload.onprogress = (e) => {
                 if (e.lengthComputable) {
+                    // ✅ วิ่งค้างไว้ที่ 95% ตอนส่งไฟล์เสร็จ
                     const percent = Math.round((e.loaded / e.total) * 100);
-                    document.getElementById('progressBar').style.width = percent + '%';
-                    document.getElementById('progressText').innerText = percent + '%';
-                    if (percent % 25 === 0) addLog(`📤 กำลังส่งไฟล์... ${percent}%`);
+                    const visualPercent = Math.min(percent, 95); 
+                    document.getElementById('progressBar').style.width = visualPercent + '%';
+                    document.getElementById('progressText').innerText = visualPercent + '%';
+                    if (percent === 100) {
+                        addLog("📤 ส่งไฟล์สำเร็จ (95%) กำลังรอ AI สรุปเนื้อหา...");
+                        document.getElementById('progressLabel').innerText = "AI THINKING...";
+                    }
                 }
             };
 
             xhr.onload = function() {
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('uploadProgress').classList.add('hidden');
-                
                 if (xhr.status === 200) {
                     const data = JSON.parse(xhr.responseText);
-                    addLog("✅ AI ทำงานสำเร็จ! พร้อมสรุปข้อมูล");
-                    document.getElementById('summaryResult').value = data.summary;
-                    document.getElementById('rawDisplay').innerText = data.raw;
-                    document.getElementById('reviewSection').classList.remove('hidden');
-                    if (currentMode === 'ai') document.getElementById('rawBtn').classList.remove('hidden');
+                    // ✅ เมื่อสรุปเสร็จจริง ค่อยเด้งเป็น 100%
+                    document.getElementById('progressBar').style.width = '100%';
+                    document.getElementById('progressText').innerText = '100%';
+                    document.getElementById('progressLabel').innerText = "COMPLETED";
+                    
+                    setTimeout(() => {
+                        addLog("✅ AI ประมวลผลเสร็จสิ้น!");
+                        document.getElementById('loading').classList.add('hidden');
+                        document.getElementById('summaryResult').value = data.summary;
+                        document.getElementById('rawDisplay').innerText = data.raw;
+                        document.getElementById('reviewSection').classList.remove('hidden');
+                        if (currentMode === 'ai') document.getElementById('rawBtn').classList.remove('remove', 'hidden');
+                    }, 500);
                 } else {
                     addLog("❌ Error: " + xhr.statusText);
-                    alert("เกิดข้อผิดพลาดในการประมวลผล");
+                    document.getElementById('loading').classList.add('hidden');
                 }
             };
 
@@ -170,34 +190,17 @@
         }
 
         async function handleLogin() {
-            const u = document.getElementById('userInput').value;
-            const p = document.getElementById('passInput').value;
-            const resp = await fetch('/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: u, password: p })
-            });
-            const data = await resp.json();
-            if (data.success) {
-                localStorage.setItem('isKabinLoggedIn', 'true');
-                localStorage.setItem('kabinKey', p);
-                location.reload();
-            } else alert("รหัสผ่านไม่ถูกต้อง");
+            const u = document.getElementById('userInput').value, p = document.getElementById('passInput').value;
+            const resp = await fetch('/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: u, password: p }) });
+            if ((await resp.json()).success) { localStorage.setItem('isKabinLoggedIn', 'true'); localStorage.setItem('kabinKey', p); location.reload(); }
+            else alert("รหัสผ่านไม่ถูกต้อง");
         }
 
         async function sendToLine() {
             const text = document.getElementById('summaryResult').value;
             if (!text.trim()) return alert("ใส่ข้อความก่อนส่งครับ");
-            const resp = await fetch('/send-line', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + localStorage.getItem('kabinKey')
-                },
-                body: JSON.stringify({ message: text })
-            });
-            const data = await resp.json();
-            if (data.success) alert("✅ ส่งเรียบร้อย!");
+            const resp = await fetch('/send-line', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('kabinKey') }, body: JSON.stringify({ message: text }) });
+            if ((await resp.json()).success) alert("✅ ส่งเรียบร้อย!");
         }
 
         function toggleRaw() { document.getElementById('rawBox').classList.toggle('hidden'); }
